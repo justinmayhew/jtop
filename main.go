@@ -10,6 +10,15 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+const (
+	headerRows = 1
+)
+
+var (
+	startIndex    = 0
+	selectedIndex = 0
+)
+
 func main() {
 	err := termbox.Init()
 	if err != nil {
@@ -25,7 +34,6 @@ func main() {
 		}
 	}()
 
-Loop:
 	for {
 		processes := getRunningProcesses()
 		sort.Sort(ByPid(processes))
@@ -37,11 +45,32 @@ Loop:
 
 		case ev := <-events:
 			if ev.Type == termbox.EventKey {
-				if ev.Ch == 'q' {
-					break Loop
-				}
+				switch {
+				case ev.Ch == 'q':
+					return
 
-				// TODO: handle other user input
+				case ev.Ch == 'j' || ev.Key == termbox.KeyArrowDown:
+					_, height := termbox.Size()
+					numProcessRows := height - headerRows
+					if selectedIndex+1 != numProcessRows {
+						// not at bottom of ui
+						selectedIndex++
+					} else if len(processes)-startIndex > numProcessRows {
+						// at bottom of ui and there's more processes to show,
+						// scroll down
+						startIndex++
+					}
+
+				case ev.Ch == 'k' || ev.Key == termbox.KeyArrowUp:
+					if selectedIndex != 0 {
+						// not at top of ui
+						selectedIndex--
+					} else if startIndex > 0 {
+						// at top of ui and there's more processes to show,
+						// scroll up
+						startIndex--
+					}
+				}
 			}
 		}
 	}
@@ -49,6 +78,7 @@ Loop:
 
 func drawProcessList(processes []Process) {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	width, height := termbox.Size()
 
 	y := 0
 	x := 0
@@ -78,34 +108,52 @@ func drawProcessList(processes []Process) {
 	}
 
 	// finish header background
-	w, _ := termbox.Size()
-	for x < w {
+	for x < width {
 		setTitleCell(&x, y, ' ', termbox.ColorGreen)
 	}
 
 	y++
 
-	for _, process := range processes {
+	displayProcesses := processes[startIndex : startIndex+height]
+	if startIndex+height > len(processes) {
+		displayProcesses = processes[startIndex:len(processes)]
+	}
+
+	for i, process := range displayProcesses {
 		x = 0
 		strPid := strconv.Itoa(process.Pid)
-		pidLength := len(strPid)
+
+		fg := termbox.ColorDefault
+		bg := termbox.ColorDefault
+
+		if i == selectedIndex {
+			fg = termbox.ColorBlack
+			bg = termbox.ColorCyan
+		}
 
 		// spaces to right align pid
-		for i := 0; i < pidColumnWidth-pidLength; i++ {
-			setCell(&x, y, ' ')
+		for i := 0; i < pidColumnWidth-len(strPid); i++ {
+			setCell(&x, y, ' ', fg, bg)
 		}
 
 		// pid
 		for _, ch := range strPid {
-			setCell(&x, y, ch)
+			setCell(&x, y, ch, fg, bg)
 		}
 
 		// space to separate column
-		setCell(&x, y, ' ')
+		setCell(&x, y, ' ', fg, bg)
 
 		// command
 		for _, ch := range process.Command {
-			setCell(&x, y, ch)
+			setCell(&x, y, ch, fg, bg)
+		}
+
+		if i == selectedIndex {
+			// finish row background
+			for x < width {
+				setCell(&x, y, ' ', fg, bg)
+			}
 		}
 
 		y++
@@ -119,7 +167,7 @@ func setTitleCell(x *int, y int, ch rune, bg termbox.Attribute) {
 	*x++
 }
 
-func setCell(x *int, y int, ch rune) {
-	termbox.SetCell(*x, y, ch, termbox.ColorDefault, termbox.ColorDefault)
+func setCell(x *int, y int, ch rune, fg, bg termbox.Attribute) {
+	termbox.SetCell(*x, y, ch, fg, bg)
 	*x++
 }
