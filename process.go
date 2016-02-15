@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -73,6 +74,7 @@ func getRunningProcesses() []Process {
 		}
 	}
 
+	sort.Sort(ByPid(processes))
 	return processes
 }
 

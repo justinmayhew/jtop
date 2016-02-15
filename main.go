@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"time"
 
@@ -34,14 +33,15 @@ func main() {
 		}
 	}()
 
+	ticker := time.Tick(time.Second)
+	processes := getRunningProcesses()
+
 	for {
-		processes := getRunningProcesses()
-		sort.Sort(ByPid(processes))
 		drawProcessList(processes)
 
 		select {
-		case <-time.After(time.Second):
-			// nothing, redraw on next iteration
+		case <-ticker:
+			processes = getRunningProcesses()
 
 		case ev := <-events:
 			if ev.Type == termbox.EventKey {
