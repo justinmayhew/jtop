@@ -87,6 +87,9 @@ func drawProcessList(processes []Process) {
 	pidColumnTitle := "PID"
 	pidColumnWidth := len(pidColumnTitle) + 2
 
+	userColumnTitle := "USER"
+	userColumnWidth := 8
+
 	commandColumnTitle := "Command"
 
 	// spaces to right align pid title
@@ -101,6 +104,19 @@ func drawProcessList(processes []Process) {
 
 	// space to separate column
 	setTitleCell(&x, y, ' ', termbox.ColorCyan)
+
+	// user title
+	for _, ch := range userColumnTitle {
+		setTitleCell(&x, y, ch, termbox.ColorGreen)
+	}
+
+	// spaces to end user column
+	for i := 0; i < userColumnWidth-len(userColumnTitle); i++ {
+		setTitleCell(&x, y, ' ', termbox.ColorGreen)
+	}
+
+	// space to separate column
+	setTitleCell(&x, y, ' ', termbox.ColorGreen)
 
 	// command title
 	for _, ch := range commandColumnTitle {
@@ -139,6 +155,23 @@ func drawProcessList(processes []Process) {
 		// pid
 		for _, ch := range strPid {
 			setCell(&x, y, ch, fg, bg)
+		}
+
+		// space to separate column
+		setCell(&x, y, ' ', fg, bg)
+
+		// user
+		maxUserLen := len(process.User)
+		if maxUserLen > userColumnWidth {
+			maxUserLen = userColumnWidth
+		}
+		for _, ch := range process.User[0:maxUserLen] {
+			setCell(&x, y, ch, fg, bg)
+		}
+
+		// spaces to end user column (column is left-aligned)
+		for i := 0; i < userColumnWidth-len(process.User); i++ {
+			setCell(&x, y, ' ', fg, bg)
 		}
 
 		// space to separate column
