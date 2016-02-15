@@ -24,6 +24,24 @@ type Process struct {
 	Type    ProcessType
 }
 
+func NewProcess(pid int) Process {
+	command := cmdline(pid)
+
+	user := user(pid)
+
+	pt := ProcessUser
+	if command == "" {
+		pt = ProcessKernel
+	}
+
+	return Process{
+		Pid:     pid,
+		User:    user,
+		Command: command,
+		Type:    pt,
+	}
+}
+
 // ByPid implements sort.Interface for []Process based on the Pid field.
 type ByPid []Process
 
@@ -49,21 +67,9 @@ func getRunningProcesses() []Process {
 			continue // non-PID directory
 		}
 
-		command := cmdline(pid)
-		t := ProcessUser
-		if command == "" {
-			t = ProcessKernel
-		}
-
-		// Skip kernel processes for now
-		if t == ProcessUser {
-			u := user(pid)
-			processes = append(processes, Process{
-				Pid:     pid,
-				User:    u,
-				Command: command,
-				Type:    t,
-			})
+		p := NewProcess(pid)
+		if p.Type != ProcessKernel {
+			processes = append(processes, p)
 		}
 	}
 
