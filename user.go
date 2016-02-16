@@ -1,48 +1,22 @@
 package main
 
-import (
-	"bufio"
-	"os"
-	"strconv"
-	"strings"
-)
-
-type User struct {
-	ID   int
-	Name string
-}
+import "os/user"
 
 var (
-	// users contains all of the users on the system mapped by Uid.
-	users = map[int]User{}
+	// users is a cache to prevent unnecessary calls to `LookupId`.
+	users = map[string]*user.User{}
 )
 
-func init() {
-	file, err := os.Open("/etc/passwd")
+func userByUid(uid string) (*user.User, error) {
+	if user, ok := users[uid]; ok {
+		return user, nil
+	}
+
+	user, err := user.LookupId(uid)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		// root:x:0:0:root:/root:/bin/bash
-		pieces := strings.Split(line, ":")
-
-		uid, err := strconv.Atoi(pieces[2])
-		if err != nil {
-			panic(err)
-		}
-
-		name := pieces[0]
-		users[uid] = User{
-			ID:   uid,
-			Name: name,
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		panic(err)
-	}
+	users[uid] = user
+	return user, nil
 }

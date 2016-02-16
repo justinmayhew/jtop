@@ -161,16 +161,16 @@ func drawProcessList(processes []Process) {
 		setCell(&x, y, ' ', fg, bg)
 
 		// user
-		maxUserLen := len(process.User.Name)
+		maxUserLen := len(process.User.Username)
 		if maxUserLen > userColumnWidth {
 			maxUserLen = userColumnWidth
 		}
-		for _, ch := range process.User.Name[0:maxUserLen] {
+		for _, ch := range process.User.Username[0:maxUserLen] {
 			setCell(&x, y, ch, fg, bg)
 		}
 
 		// spaces to end user column (column is left-aligned)
-		for i := 0; i < userColumnWidth-len(process.User.Name); i++ {
+		for i := 0; i < userColumnWidth-len(process.User.Username); i++ {
 			setCell(&x, y, ' ', fg, bg)
 		}
 

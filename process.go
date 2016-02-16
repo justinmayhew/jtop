@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -20,7 +21,7 @@ const (
 // Process represents an operating system process.
 type Process struct {
 	Pid     int
-	User    User
+	User    *user.User
 	Command string
 	Type    ProcessType
 }
@@ -28,7 +29,7 @@ type Process struct {
 func NewProcess(pid int) Process {
 	command := cmdline(pid)
 
-	user := user(pid)
+	user := userFromPid(pid)
 
 	pt := ProcessUser
 	if command == "" {
@@ -95,9 +96,8 @@ func cmdline(pid int) string {
 	return strings.TrimSpace(strings.Replace(s, "\x00", " ", -1))
 }
 
-// user returns the effective user running process `pid`.
-func user(pid int) User {
-	var uid int
+// userFromPid returns the effective user running process `pid`.
+func userFromPid(pid int) *user.User {
 	path := filepath.Join("/proc", strconv.Itoa(pid), "status")
 
 	file, err := os.Open(path)
@@ -106,6 +106,7 @@ func user(pid int) User {
 	}
 	defer file.Close()
 
+	var uid string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -117,15 +118,17 @@ func user(pid int) User {
 		// Uid:\t1000\t1000\t1000\t1000
 		pieces := strings.Split(line, "\t")
 
-		uid, err = strconv.Atoi(pieces[2])
-		if err != nil {
-			panic(err)
-		}
+		uid = pieces[2]
 		break
 	}
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
 
-	return users[uid]
+	user, err := userByUid(uid)
+	if err != nil {
+		panic(err)
+	}
+
+	return user
 }
