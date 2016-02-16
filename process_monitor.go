@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+// ProcessMonitor keeps tracks of the processes running on the system.
 type ProcessMonitor struct {
 	List []*Process
 	Map  map[int]*Process
@@ -17,6 +18,7 @@ func NewProcessMonitor() *ProcessMonitor {
 	return pm
 }
 
+// Update updates the ProcessMonitor's state via the /proc filesystem.
 func (pm *ProcessMonitor) Update() {
 	files, err := ioutil.ReadDir("/proc")
 	if err != nil {
@@ -49,13 +51,13 @@ func (pm *ProcessMonitor) Update() {
 				p.Alive = true
 
 				if !p.IsKernelThread() {
-					pm.AddProcess(p)
+					pm.addProcess(p)
 				}
 			}
 		}
 	}
 
-	pm.RemoveDeadProcesses()
+	pm.removeDeadProcesses()
 
 	sort.Sort(ByPid(pm.List))
 
@@ -65,12 +67,12 @@ func (pm *ProcessMonitor) Update() {
 	}
 }
 
-func (pm *ProcessMonitor) AddProcess(p *Process) {
+func (pm *ProcessMonitor) addProcess(p *Process) {
 	pm.List = append(pm.List, p)
 	pm.Map[p.Pid] = p
 }
 
-func (pm *ProcessMonitor) RemoveDeadProcesses() {
+func (pm *ProcessMonitor) removeDeadProcesses() {
 	for i := len(pm.List) - 1; i >= 0; i-- {
 		p := pm.List[i]
 

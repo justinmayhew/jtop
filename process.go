@@ -81,7 +81,7 @@ func NewProcess(pid int) *Process {
 		Pid: pid,
 	}
 
-	if err := p.ParseCmdlineFile(); err != nil {
+	if err := p.parseCmdlineFile(); err != nil {
 		return nil
 	}
 
@@ -93,19 +93,23 @@ func NewProcess(pid int) *Process {
 }
 
 func (p *Process) Update() error {
-	if err := p.StatProcDir(); err != nil {
+	if err := p.statProcDir(); err != nil {
 		return err
 	}
 
-	if err := p.ParseStatFile(); err != nil {
+	if err := p.parseStatFile(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// StatProcDir updates p with any information it needs from statting /proc/<pid>.
-func (p *Process) StatProcDir() error {
+func (p *Process) IsKernelThread() bool {
+	return p.Pgrp == 0
+}
+
+// statProcDir updates p with any information it needs from statting /proc/<pid>.
+func (p *Process) statProcDir() error {
 	path := filepath.Join("/proc", strconv.Itoa(p.Pid))
 
 	var stat syscall.Stat_t
@@ -123,8 +127,8 @@ func (p *Process) StatProcDir() error {
 	return nil
 }
 
-// ParseStatFile updates p with any information it needs from /proc/<pid>/stat.
-func (p *Process) ParseStatFile() error {
+// parseStatFile updates p with any information it needs from /proc/<pid>/stat.
+func (p *Process) parseStatFile() error {
 	path := filepath.Join("/proc", strconv.Itoa(p.Pid), "stat")
 
 	file, err := os.Open(path)
@@ -162,8 +166,8 @@ func (p *Process) ParseStatFile() error {
 	return nil
 }
 
-// ParseCmdlineFile sets p's Command via /proc/<pid>/cmdline.
-func (p *Process) ParseCmdlineFile() error {
+// parseCmdlineFile sets p's Command via /proc/<pid>/cmdline.
+func (p *Process) parseCmdlineFile() error {
 	path := filepath.Join("/proc", strconv.Itoa(p.Pid), "cmdline")
 
 	data, err := ioutil.ReadFile(path)
@@ -174,10 +178,6 @@ func (p *Process) ParseCmdlineFile() error {
 	s := string(data)
 	p.Command = strings.TrimSpace(strings.Replace(s, "\x00", " ", -1))
 	return nil
-}
-
-func (p *Process) IsKernelThread() bool {
-	return p.Pgrp == 0
 }
 
 type ByPid []*Process
