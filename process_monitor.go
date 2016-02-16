@@ -12,6 +12,7 @@ type ProcessMonitor struct {
 	Map  map[int]*Process
 }
 
+// NewProcessMonitor returns an initialized ProcessMonitor ready for use.
 func NewProcessMonitor() *ProcessMonitor {
 	pm := &ProcessMonitor{}
 	pm.Map = make(map[int]*Process)

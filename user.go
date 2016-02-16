@@ -7,7 +7,7 @@ var (
 	users = map[string]*user.User{}
 )
 
-func userByUid(uid string) (*user.User, error) {
+func userByUID(uid string) (*user.User, error) {
 	if user, ok := users[uid]; ok {
 		return user, nil
 	}

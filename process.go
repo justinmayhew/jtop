@@ -92,6 +92,9 @@ func NewProcess(pid int) *Process {
 	return p
 }
 
+// Update updates the Process from various files in /proc/<pid>. It returns an
+// error if the process was unable to be updated (probably because the process
+// is no longer running).
 func (p *Process) Update() error {
 	if err := p.statProcDir(); err != nil {
 		return err
@@ -104,6 +107,7 @@ func (p *Process) Update() error {
 	return nil
 }
 
+// IsKernelThread returns whether or not Process is a kernel thread.
 func (p *Process) IsKernelThread() bool {
 	return p.Pgrp == 0
 }
@@ -118,7 +122,7 @@ func (p *Process) statProcDir() error {
 		return err
 	}
 
-	user, err := userByUid(strconv.FormatUint(uint64(stat.Uid), 10))
+	user, err := userByUID(strconv.FormatUint(uint64(stat.Uid), 10))
 	if err != nil {
 		panic(err)
 	}
@@ -180,6 +184,7 @@ func (p *Process) parseCmdlineFile() error {
 	return nil
 }
 
+// ByPid implements sort.Interface.
 type ByPid []*Process
 
 func (p ByPid) Len() int           { return len(p) }
