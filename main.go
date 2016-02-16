@@ -34,14 +34,15 @@ func main() {
 	}()
 
 	ticker := time.Tick(time.Second)
-	processes := getRunningProcesses()
+	pm := NewProcessMonitor()
+	pm.Update()
 
 	for {
-		drawProcessList(processes)
+		drawUserInterface(pm)
 
 		select {
 		case <-ticker:
-			processes = getRunningProcesses()
+			pm.Update()
 
 		case ev := <-events:
 			if ev.Type == termbox.EventKey {
@@ -55,7 +56,7 @@ func main() {
 					if selectedIndex+1 != numProcessRows {
 						// not at bottom of ui
 						selectedIndex++
-					} else if len(processes)-startIndex > numProcessRows {
+					} else if len(pm.List)-startIndex > numProcessRows {
 						// at bottom of ui and there's more processes to show,
 						// scroll down
 						startIndex++
@@ -76,7 +77,7 @@ func main() {
 	}
 }
 
-func drawProcessList(processes []Process) {
+func drawUserInterface(pm *ProcessMonitor) {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	width, height := termbox.Size()
 
@@ -130,9 +131,9 @@ func drawProcessList(processes []Process) {
 
 	y++
 
-	displayProcesses := processes[startIndex : startIndex+height]
-	if startIndex+height > len(processes) {
-		displayProcesses = processes[startIndex:len(processes)]
+	displayProcesses := pm.List[startIndex:len(pm.List)]
+	if startIndex+height < len(pm.List) {
+		displayProcesses = pm.List[startIndex : startIndex+height]
 	}
 
 	for i, process := range displayProcesses {
