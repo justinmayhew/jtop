@@ -10,6 +10,54 @@ import (
 	"syscall"
 )
 
+const (
+	// The indices of the values in /proc/<pid>/stat
+	statPidIdx = iota
+	statCommIdx
+	statStateIdx
+	statPpidIdx
+	statPgrpIdx
+	statSessionIdx
+	statTtyNrIdx
+	statTpgidIdx
+	statFlagsIdx
+	statMinfltIdx
+	statCminfltIdx
+	statMajfltIdx
+	statCmajfltIdx
+	statUtimeIdx
+	statStimeIdx
+	statCutimeIdx
+	statCstimeIdx
+	statPriorityIdx
+	statNiceIdx
+	statNumThreadsIdx
+	statItrealvalueIdx
+	statStartTimeIdx
+	statVsizeIdx
+	statRssIdx
+	statRsslimIdx
+	statStartCodeIdx
+	statEndCodeIdx
+	statStartStackIdx
+	statKstKespIdx
+	statKstKeipIdx
+	statSignalIdx
+	statBlockedIdx
+	statSigIgnoreIdx
+	statSigCatchIdx
+	statWchanIdx
+	statNswapIdx
+	statCnswapIdx
+	statExitSignalIdx
+	statProcessorIdx
+	statRtPriorityIdx
+	statPolicyIdx
+	statDelayActBlkioTicksIdx
+	statGuestTimeIdx
+	statCguestTimeIdx
+)
+
 // Process represents an operating system process.
 type Process struct {
 	Pid     int
@@ -20,7 +68,7 @@ type Process struct {
 	// this process.
 	Alive bool
 
-	// Data from proc/<pid>/stat
+	// Data from /proc/<pid>/stat
 	Pgrp  int
 	Utime uint64
 	Stime uint64
@@ -93,19 +141,19 @@ func (p *Process) ParseStatFile() error {
 	line := string(data)
 	values := strings.Split(line, " ")
 
-	pgrp, err := strconv.Atoi(values[4])
+	pgrp, err := strconv.Atoi(values[statPgrpIdx])
 	if err != nil {
 		panic(err)
 	}
 	p.Pgrp = pgrp
 
-	utime, err := strconv.Atoi(values[13])
+	utime, err := strconv.Atoi(values[statUtimeIdx])
 	if err != nil {
 		panic(err)
 	}
 	p.Utime = uint64(utime)
 
-	stime, err := strconv.Atoi(values[14])
+	stime, err := strconv.Atoi(values[statStimeIdx])
 	if err != nil {
 		panic(err)
 	}
