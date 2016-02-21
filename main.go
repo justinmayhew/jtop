@@ -9,19 +9,9 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-const (
-	headerRows = 1
-)
-
-var (
-	startIndex    = 0
-	selectedIndex = 0
-)
-
 func main() {
-	err := termbox.Init()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to initialize termbox.")
+	if err := termbox.Init(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	defer termbox.Close()
@@ -53,29 +43,49 @@ func main() {
 				case ev.Ch == 'j' || ev.Key == termbox.KeyArrowDown:
 					_, height := termbox.Size()
 					numProcessRows := height - headerRows
-					if selectedIndex+1 != numProcessRows {
+					if selectedIdx+1 != numProcessRows {
 						// not at bottom of ui
-						selectedIndex++
-					} else if len(pm.List)-startIndex > numProcessRows {
+						selectedIdx++
+					} else if len(pm.List)-startIdx > numProcessRows {
 						// at bottom of ui and there's more processes to show,
 						// scroll down
-						startIndex++
+						startIdx++
 					}
 
 				case ev.Ch == 'k' || ev.Key == termbox.KeyArrowUp:
-					if selectedIndex != 0 {
+					if selectedIdx != 0 {
 						// not at top of ui
-						selectedIndex--
-					} else if startIndex > 0 {
+						selectedIdx--
+					} else if startIdx > 0 {
 						// at top of ui and there's more processes to show,
 						// scroll up
-						startIndex--
+						startIdx--
 					}
 				}
 			}
 		}
 	}
 }
+
+const (
+	headerRows = 1
+
+	pidColumnTitle = "PID"
+	pidColumnWidth = 5 // 32768 is the max pid on my system
+
+	userColumnTitle = "USER"
+	userColumnWidth = 8
+
+	cpuColumnTitle = "%CPU"
+	cpuColumnWidth = 5
+
+	commandColumnTitle = "Command"
+)
+
+var (
+	startIdx    = 0
+	selectedIdx = 0
+)
 
 func drawUserInterface(pm *ProcessMonitor) {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
@@ -84,140 +94,50 @@ func drawUserInterface(pm *ProcessMonitor) {
 	y := 0
 	x := 0
 
-	// 32768 is the max pid on my system, so ensure the column is at least 5 wide
-	pidColumnTitle := "PID"
-	pidColumnWidth := len(pidColumnTitle) + 2
-
-	userColumnTitle := "USER"
-	userColumnWidth := 8
-
-	cpuColumnTitle := "CPU%"
-	cpuColumnWidth := len(cpuColumnTitle)
-
-	commandColumnTitle := "Command"
-
-	// spaces to right align pid title
-	for i := 0; i < pidColumnWidth-len(pidColumnTitle); i++ {
-		setTitleCell(&x, y, ' ', termbox.ColorGreen)
-	}
-
-	// pid title
-	for _, ch := range pidColumnTitle {
-		setTitleCell(&x, y, ch, termbox.ColorGreen)
-	}
-
-	// space to separate column
-	setTitleCell(&x, y, ' ', termbox.ColorGreen)
-
-	// user title
-	for _, ch := range userColumnTitle {
-		setTitleCell(&x, y, ch, termbox.ColorGreen)
-	}
-
-	// spaces to end user column
-	for i := 0; i < userColumnWidth-len(userColumnTitle); i++ {
-		setTitleCell(&x, y, ' ', termbox.ColorGreen)
-	}
-
-	// space to separate column
-	setTitleCell(&x, y, ' ', termbox.ColorGreen)
-
-	// cpu title
-	for _, ch := range cpuColumnTitle {
-		setTitleCell(&x, y, ch, termbox.ColorCyan)
-	}
-
-	// space to separate column
-	setTitleCell(&x, y, ' ', termbox.ColorCyan)
-
-	// command title
-	for _, ch := range commandColumnTitle {
-		setTitleCell(&x, y, ch, termbox.ColorGreen)
-	}
-
-	// finish header background
-	for x < width {
-		setTitleCell(&x, y, ' ', termbox.ColorGreen)
-	}
+	writeColumn(pidColumnTitle, pidColumnWidth, true, &x, y, termbox.ColorBlack, termbox.ColorGreen)
+	writeColumn(userColumnTitle, userColumnWidth, false, &x, y, termbox.ColorBlack, termbox.ColorGreen)
+	writeColumn(cpuColumnTitle, cpuColumnWidth, true, &x, y, termbox.ColorBlack, termbox.ColorCyan)
+	writeLastColumn(commandColumnTitle, width, x, y, termbox.ColorBlack, termbox.ColorGreen)
 
 	y++
 
-	displayProcesses := pm.List[startIndex:len(pm.List)]
-	if startIndex+height < len(pm.List) {
-		displayProcesses = pm.List[startIndex : startIndex+height]
+	displayProcesses := pm.List[startIdx:len(pm.List)]
+	if startIdx+height < len(pm.List) {
+		displayProcesses = pm.List[startIdx : startIdx+height]
 	}
 
 	for i, process := range displayProcesses {
 		x = 0
-		strPid := strconv.Itoa(process.Pid)
 
 		fg := termbox.ColorDefault
 		bg := termbox.ColorDefault
 
-		if i == selectedIndex {
+		if i == selectedIdx {
 			fg = termbox.ColorBlack
 			bg = termbox.ColorCyan
 		}
 
-		// spaces to right align pid
-		for i := 0; i < pidColumnWidth-len(strPid); i++ {
-			setCell(&x, y, ' ', fg, bg)
-		}
+		// PID
+		pidColumn := strconv.Itoa(process.Pid)
+		writeColumn(pidColumn, pidColumnWidth, true, &x, y, fg, bg)
 
-		// pid
-		for _, ch := range strPid {
-			setCell(&x, y, ch, fg, bg)
-		}
-
-		// space to separate column
-		setCell(&x, y, ' ', fg, bg)
-
-		// user
+		// User
 		maxUserLen := len(process.User.Username)
 		if maxUserLen > userColumnWidth {
 			maxUserLen = userColumnWidth
 		}
-		for _, ch := range process.User.Username[0:maxUserLen] {
-			setCell(&x, y, ch, fg, bg)
-		}
+		userColumn := process.User.Username[0:maxUserLen]
+		writeColumn(userColumn, userColumnWidth, false, &x, y, fg, bg)
 
-		// spaces to end user column (column is left-aligned)
-		for i := 0; i < userColumnWidth-len(process.User.Username); i++ {
-			setCell(&x, y, ' ', fg, bg)
-		}
-
-		// space to separate column
-		setCell(&x, y, ' ', fg, bg)
-
+		// CPU Percentage
 		totalUsage := float64(pm.CPUTimeDiff)
 		userUsage := 100 * float64(process.UtimeDiff) / totalUsage
 		systemUsage := 100 * float64(process.StimeDiff) / totalUsage
 		cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(pm.NumCPUs))
+		writeColumn(cpuColumn, cpuColumnWidth, true, &x, y, fg, bg)
 
-		// spaces to right align cpu
-		for i := 0; i < cpuColumnWidth-len(cpuColumn); i++ {
-			setCell(&x, y, ' ', fg, bg)
-		}
-
-		// cpu
-		for _, ch := range cpuColumn {
-			setCell(&x, y, ch, fg, bg)
-		}
-
-		// space to separate column
-		setCell(&x, y, ' ', fg, bg)
-
-		// command
-		for _, ch := range process.Command {
-			setCell(&x, y, ch, fg, bg)
-		}
-
-		if i == selectedIndex {
-			// finish row background
-			for x < width {
-				setCell(&x, y, ' ', fg, bg)
-			}
-		}
+		// Command
+		writeLastColumn(process.Command, width, x, y, fg, bg)
 
 		y++
 	}
@@ -225,12 +145,39 @@ func drawUserInterface(pm *ProcessMonitor) {
 	termbox.Flush()
 }
 
-func setTitleCell(x *int, y int, ch rune, bg termbox.Attribute) {
-	termbox.SetCell(*x, y, ch, termbox.ColorBlack, bg)
+func writeColumn(s string, columnWidth int, rightAlign bool, x *int, y int, fg, bg termbox.Attribute) {
+	if rightAlign {
+		for i := 0; i < columnWidth-len(s); i++ {
+			termbox.SetCell(*x, y, ' ', fg, bg)
+			*x++
+		}
+	}
+
+	for _, ch := range s {
+		termbox.SetCell(*x, y, ch, fg, bg)
+		*x++
+	}
+
+	if !rightAlign {
+		for i := 0; i < columnWidth-len(s); i++ {
+			termbox.SetCell(*x, y, ' ', fg, bg)
+			*x++
+		}
+	}
+
+	// Space to separate columns
+	termbox.SetCell(*x, y, ' ', fg, bg)
 	*x++
 }
 
-func setCell(x *int, y int, ch rune, fg, bg termbox.Attribute) {
-	termbox.SetCell(*x, y, ch, fg, bg)
-	*x++
+func writeLastColumn(s string, terminalWidth, x, y int, fg, bg termbox.Attribute) {
+	for _, ch := range s {
+		termbox.SetCell(x, y, ch, fg, bg)
+		x++
+	}
+
+	for x < terminalWidth {
+		termbox.SetCell(x, y, ' ', fg, bg)
+		x++
+	}
 }
