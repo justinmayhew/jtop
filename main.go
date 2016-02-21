@@ -33,7 +33,7 @@ func main() {
 		}
 	}()
 
-	ticker := time.Tick(time.Second)
+	ticker := time.Tick(1500 * time.Millisecond)
 	pm := NewProcessMonitor()
 	pm.Update()
 
@@ -91,20 +91,23 @@ func drawUserInterface(pm *ProcessMonitor) {
 	userColumnTitle := "USER"
 	userColumnWidth := 8
 
+	cpuColumnTitle := "CPU%"
+	cpuColumnWidth := len(cpuColumnTitle)
+
 	commandColumnTitle := "Command"
 
 	// spaces to right align pid title
 	for i := 0; i < pidColumnWidth-len(pidColumnTitle); i++ {
-		setTitleCell(&x, y, ' ', termbox.ColorCyan)
+		setTitleCell(&x, y, ' ', termbox.ColorGreen)
 	}
 
 	// pid title
 	for _, ch := range pidColumnTitle {
-		setTitleCell(&x, y, ch, termbox.ColorCyan)
+		setTitleCell(&x, y, ch, termbox.ColorGreen)
 	}
 
 	// space to separate column
-	setTitleCell(&x, y, ' ', termbox.ColorCyan)
+	setTitleCell(&x, y, ' ', termbox.ColorGreen)
 
 	// user title
 	for _, ch := range userColumnTitle {
@@ -118,6 +121,14 @@ func drawUserInterface(pm *ProcessMonitor) {
 
 	// space to separate column
 	setTitleCell(&x, y, ' ', termbox.ColorGreen)
+
+	// cpu title
+	for _, ch := range cpuColumnTitle {
+		setTitleCell(&x, y, ch, termbox.ColorCyan)
+	}
+
+	// space to separate column
+	setTitleCell(&x, y, ' ', termbox.ColorCyan)
 
 	// command title
 	for _, ch := range commandColumnTitle {
@@ -173,6 +184,24 @@ func drawUserInterface(pm *ProcessMonitor) {
 		// spaces to end user column (column is left-aligned)
 		for i := 0; i < userColumnWidth-len(process.User.Username); i++ {
 			setCell(&x, y, ' ', fg, bg)
+		}
+
+		// space to separate column
+		setCell(&x, y, ' ', fg, bg)
+
+		totalUsage := float64(pm.CPUTimeDiff)
+		userUsage := 100 * float64(process.UtimeDiff) / totalUsage
+		systemUsage := 100 * float64(process.StimeDiff) / totalUsage
+		cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(pm.NumCPUs))
+
+		// spaces to right align cpu
+		for i := 0; i < cpuColumnWidth-len(cpuColumn); i++ {
+			setCell(&x, y, ' ', fg, bg)
+		}
+
+		// cpu
+		for _, ch := range cpuColumn {
+			setCell(&x, y, ch, fg, bg)
 		}
 
 		// space to separate column

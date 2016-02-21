@@ -72,6 +72,9 @@ type Process struct {
 	Pgrp  int
 	Utime uint64
 	Stime uint64
+
+	UtimeDiff uint64
+	StimeDiff uint64
 }
 
 // NewProcess returns a new Process if a process is currently running on
@@ -117,14 +120,13 @@ func (p *Process) statProcDir() error {
 	path := filepath.Join("/proc", strconv.Itoa(p.Pid))
 
 	var stat syscall.Stat_t
-	err := syscall.Stat(path, &stat)
-	if err != nil {
+	if err := syscall.Stat(path, &stat); err != nil {
 		return err
 	}
 
-	user, err := userByUID(strconv.FormatUint(uint64(stat.Uid), 10))
+	user, err := UserByUID(strconv.FormatUint(uint64(stat.Uid), 10))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	p.User = user
 
@@ -149,23 +151,24 @@ func (p *Process) parseStatFile() error {
 	line := string(data)
 	values := strings.Split(line, " ")
 
-	pgrp, err := strconv.Atoi(values[statPgrpIdx])
+	p.Pgrp, err = strconv.Atoi(values[statPgrpIdx])
 	if err != nil {
 		panic(err)
 	}
-	p.Pgrp = pgrp
 
-	utime, err := strconv.Atoi(values[statUtimeIdx])
+	lastUtime := p.Utime
+	p.Utime, err = strconv.ParseUint(values[statUtimeIdx], 10, 64)
 	if err != nil {
 		panic(err)
 	}
-	p.Utime = uint64(utime)
+	p.UtimeDiff = p.Utime - lastUtime
 
-	stime, err := strconv.Atoi(values[statStimeIdx])
+	lastStime := p.Stime
+	p.Stime, err = strconv.ParseUint(values[statStimeIdx], 10, 64)
 	if err != nil {
 		panic(err)
 	}
-	p.Stime = uint64(stime)
+	p.StimeDiff = p.Stime - lastStime
 
 	return nil
 }
@@ -190,3 +193,12 @@ type ByPid []*Process
 func (p ByPid) Len() int           { return len(p) }
 func (p ByPid) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p ByPid) Less(i, j int) bool { return p[i].Pid < p[j].Pid }
+
+// ByCPUTimeDiff implements sort.Interface.
+type ByCPUTimeDiff []*Process
+
+func (p ByCPUTimeDiff) Len() int      { return len(p) }
+func (p ByCPUTimeDiff) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByCPUTimeDiff) Less(i, j int) bool {
+	return p[i].UtimeDiff+p[i].StimeDiff > p[j].UtimeDiff+p[j].StimeDiff
+}

@@ -7,7 +7,9 @@ var (
 	users = map[string]*user.User{}
 )
 
-func userByUID(uid string) (*user.User, error) {
+// UserByUID returns a User for a particular UID. An error will be returned
+// if a User with that UID does not exist.
+func UserByUID(uid string) (*user.User, error) {
 	if user, ok := users[uid]; ok {
 		return user, nil
 	}

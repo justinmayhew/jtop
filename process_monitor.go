@@ -1,26 +1,39 @@
 package main
 
 import (
+	"bufio"
 	"io/ioutil"
+	"os"
+	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 // ProcessMonitor keeps tracks of the processes running on the system.
 type ProcessMonitor struct {
 	List []*Process
 	Map  map[int]*Process
+
+	NumCPUs      int
+	CPUTimeTotal uint64
+	CPUTimeDiff  uint64
 }
 
 // NewProcessMonitor returns an initialized ProcessMonitor ready for use.
 func NewProcessMonitor() *ProcessMonitor {
 	pm := &ProcessMonitor{}
 	pm.Map = make(map[int]*Process)
+	pm.NumCPUs = runtime.NumCPU()
 	return pm
 }
 
 // Update updates the ProcessMonitor's state via the /proc filesystem.
 func (pm *ProcessMonitor) Update() {
+	lastCPUTimeTotal := pm.CPUTimeTotal
+	pm.parseStatFile()
+	pm.CPUTimeDiff = pm.CPUTimeTotal - lastCPUTimeTotal
+
 	files, err := ioutil.ReadDir("/proc")
 	if err != nil {
 		panic(err)
@@ -60,7 +73,7 @@ func (pm *ProcessMonitor) Update() {
 
 	pm.removeDeadProcesses()
 
-	sort.Sort(ByPid(pm.List))
+	sort.Sort(ByCPUTimeDiff(pm.List))
 
 	// sanity check
 	if len(pm.List) != len(pm.Map) {
@@ -80,6 +93,30 @@ func (pm *ProcessMonitor) removeDeadProcesses() {
 		if !p.Alive {
 			pm.List = append(pm.List[:i], pm.List[i+1:]...)
 			delete(pm.Map, p.Pid)
+		}
+	}
+}
+
+func (pm *ProcessMonitor) parseStatFile() {
+	file, err := os.Open("/proc/stat")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "cpu ") {
+			pm.CPUTimeTotal = 0
+			cpuTimeValues := strings.Split(line, " ")[2:] // skip "cpu" and ""
+			for _, cpuTimeValue := range cpuTimeValues {
+				value, err := strconv.ParseUint(cpuTimeValue, 10, 64)
+				if err != nil {
+					panic(err)
+				}
+				pm.CPUTimeTotal += value
+			}
 		}
 	}
 }
