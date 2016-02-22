@@ -200,5 +200,12 @@ type ByCPUTimeDiff []*Process
 func (p ByCPUTimeDiff) Len() int      { return len(p) }
 func (p ByCPUTimeDiff) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p ByCPUTimeDiff) Less(i, j int) bool {
-	return p[i].UtimeDiff+p[i].StimeDiff > p[j].UtimeDiff+p[j].StimeDiff
+	p1, p2 := p[i], p[j]
+	p1Total := p1.UtimeDiff + p1.StimeDiff
+	p2Total := p2.UtimeDiff + p2.StimeDiff
+	if p1Total == p2Total {
+		// Fall back to sorting by PID
+		return p1.Pid < p2.Pid
+	}
+	return p1Total > p2Total
 }
