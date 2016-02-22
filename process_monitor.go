@@ -117,6 +117,12 @@ func (pm *ProcessMonitor) parseStatFile() {
 				}
 				pm.CPUTimeTotal += value
 			}
+
+			// Only parsing the first line for now, ignore rest of file.
+			break
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		panic(err)
 	}
 }
