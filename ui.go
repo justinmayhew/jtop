@@ -19,6 +19,9 @@ const (
 	cpuColumnTitle = "%CPU"
 	cpuColumnWidth = 5
 
+	timeColumnTitle = "TIME+"
+	timeColumnWidth = 8
+
 	commandColumnTitle = "Command"
 )
 
@@ -49,6 +52,7 @@ func (ui *UI) Draw() {
 	writeColumn(pidColumnTitle, pidColumnWidth, true, &x, y, termbox.ColorBlack, termbox.ColorGreen)
 	writeColumn(userColumnTitle, userColumnWidth, false, &x, y, termbox.ColorBlack, termbox.ColorGreen)
 	writeColumn(cpuColumnTitle, cpuColumnWidth, true, &x, y, termbox.ColorBlack, termbox.ColorCyan)
+	writeColumn(timeColumnTitle, timeColumnWidth, true, &x, y, termbox.ColorBlack, termbox.ColorGreen)
 	writeLastColumn(commandColumnTitle, ui.width, x, y, termbox.ColorBlack, termbox.ColorGreen)
 
 	y++
@@ -87,6 +91,21 @@ func (ui *UI) Draw() {
 		systemUsage := 100 * float64(process.StimeDiff) / totalUsage
 		cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(ui.pm.NumCPUs))
 		writeColumn(cpuColumn, cpuColumnWidth, true, &x, y, fg, bg)
+
+		// Time
+		hertz := uint64(100)
+		// TODO: this has only been tested on my Ubuntu 14.04 system that has
+		// a CLK_TICK of 100. Test on other configurations. (getconf CLK_TICK)
+		totalJiffies := process.Utime + process.Stime
+		totalSeconds := totalJiffies / hertz
+
+		minutes := totalSeconds / 60
+		seconds := totalSeconds % 60
+		hundredths := totalJiffies % hertz
+
+		// FIXME: this won't be pretty when minutes gets big, maybe format hours?
+		timeColumn := fmt.Sprintf("%d:%02d:%02d", minutes, seconds, hundredths)
+		writeColumn(timeColumn, timeColumnWidth, true, &x, y, fg, bg)
 
 		// Command
 		writeLastColumn(process.Command, ui.width, x, y, fg, bg)
