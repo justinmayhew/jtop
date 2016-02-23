@@ -23,6 +23,10 @@ const (
 	timeColumnWidth = 8
 
 	commandColumnTitle = "Command"
+
+	titleFG     = termbox.ColorBlack
+	titleBG     = termbox.ColorGreen
+	titleSortBG = termbox.ColorCyan
 )
 
 type UI struct {
@@ -49,11 +53,23 @@ func (ui *UI) Draw() {
 	y := 0
 	x := 0
 
-	writeColumn(pidColumnTitle, pidColumnWidth, true, &x, y, termbox.ColorBlack, termbox.ColorGreen)
-	writeColumn(userColumnTitle, userColumnWidth, false, &x, y, termbox.ColorBlack, termbox.ColorGreen)
-	writeColumn(cpuColumnTitle, cpuColumnWidth, true, &x, y, termbox.ColorBlack, termbox.ColorCyan)
-	writeColumn(timeColumnTitle, timeColumnWidth, true, &x, y, termbox.ColorBlack, termbox.ColorGreen)
-	writeLastColumn(commandColumnTitle, ui.width, x, y, termbox.ColorBlack, termbox.ColorGreen)
+	fg := titleFG
+	bg := titleBG
+
+	bg = bgForTitle("pid")
+	writeColumn(pidColumnTitle, pidColumnWidth, true, &x, y, fg, bg)
+
+	bg = bgForTitle("user")
+	writeColumn(userColumnTitle, userColumnWidth, false, &x, y, fg, bg)
+
+	bg = bgForTitle("cpu")
+	writeColumn(cpuColumnTitle, cpuColumnWidth, true, &x, y, fg, bg)
+
+	bg = bgForTitle("time")
+	writeColumn(timeColumnTitle, timeColumnWidth, true, &x, y, fg, bg)
+
+	bg = bgForTitle("command")
+	writeLastColumn(commandColumnTitle, ui.width, x, y, fg, bg)
 
 	y++
 
@@ -65,8 +81,8 @@ func (ui *UI) Draw() {
 	for i, process := range displayProcesses {
 		x = 0
 
-		fg := termbox.ColorDefault
-		bg := termbox.ColorDefault
+		fg = termbox.ColorDefault
+		bg = termbox.ColorDefault
 
 		if i == ui.selectedIdx {
 			fg = termbox.ColorBlack
@@ -74,7 +90,7 @@ func (ui *UI) Draw() {
 		}
 
 		// PID
-		pidColumn := strconv.Itoa(process.Pid)
+		pidColumn := strconv.Itoa(process.PID)
 		writeColumn(pidColumn, pidColumnWidth, true, &x, y, fg, bg)
 
 		// User
@@ -210,4 +226,11 @@ func writeLastColumn(s string, terminalWidth, x, y int, fg, bg termbox.Attribute
 		termbox.SetCell(x, y, ' ', fg, bg)
 		x++
 	}
+}
+
+func bgForTitle(title string) termbox.Attribute {
+	if title == *sortFlag {
+		return titleSortBG
+	}
+	return titleBG
 }

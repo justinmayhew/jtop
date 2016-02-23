@@ -60,7 +60,7 @@ const (
 
 // Process represents an operating system process.
 type Process struct {
-	Pid     int
+	PID     int
 	User    *user.User
 	Command string
 
@@ -78,10 +78,10 @@ type Process struct {
 }
 
 // NewProcess returns a new Process if a process is currently running on
-// the system with the passed in Pid.
+// the system with the passed in PID.
 func NewProcess(pid int) *Process {
 	p := &Process{
-		Pid: pid,
+		PID: pid,
 	}
 
 	if err := p.parseCmdlineFile(); err != nil {
@@ -117,7 +117,7 @@ func (p *Process) IsKernelThread() bool {
 
 // statProcDir updates p with any information it needs from statting /proc/<pid>.
 func (p *Process) statProcDir() error {
-	path := filepath.Join("/proc", strconv.Itoa(p.Pid))
+	path := filepath.Join("/proc", strconv.Itoa(p.PID))
 
 	var stat syscall.Stat_t
 	if err := syscall.Stat(path, &stat); err != nil {
@@ -135,7 +135,7 @@ func (p *Process) statProcDir() error {
 
 // parseStatFile updates p with any information it needs from /proc/<pid>/stat.
 func (p *Process) parseStatFile() error {
-	path := filepath.Join("/proc", strconv.Itoa(p.Pid), "stat")
+	path := filepath.Join("/proc", strconv.Itoa(p.PID), "stat")
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -175,7 +175,7 @@ func (p *Process) parseStatFile() error {
 
 // parseCmdlineFile sets p's Command via /proc/<pid>/cmdline.
 func (p *Process) parseCmdlineFile() error {
-	path := filepath.Join("/proc", strconv.Itoa(p.Pid), "cmdline")
+	path := filepath.Join("/proc", strconv.Itoa(p.PID), "cmdline")
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -187,25 +187,50 @@ func (p *Process) parseCmdlineFile() error {
 	return nil
 }
 
-// ByPid implements sort.Interface.
-type ByPid []*Process
+// ByPid sorts by PID.
+type ByPID []*Process
 
-func (p ByPid) Len() int           { return len(p) }
-func (p ByPid) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p ByPid) Less(i, j int) bool { return p[i].Pid < p[j].Pid }
+func (p ByPID) Len() int      { return len(p) }
+func (p ByPID) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByPID) Less(i, j int) bool {
+	return p[i].PID < p[j].PID
+}
 
-// ByCPUTimeDiff implements sort.Interface.
-type ByCPUTimeDiff []*Process
+// ByUser sorts by the username of the processes user.
+type ByUser []*Process
 
-func (p ByCPUTimeDiff) Len() int      { return len(p) }
-func (p ByCPUTimeDiff) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
-func (p ByCPUTimeDiff) Less(i, j int) bool {
+func (p ByUser) Len() int      { return len(p) }
+func (p ByUser) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByUser) Less(i, j int) bool {
+	return p[i].User.Username < p[j].User.Username
+}
+
+// ByCPU sorts by the amount of CPU time used since the last update.
+type ByCPU []*Process
+
+func (p ByCPU) Len() int      { return len(p) }
+func (p ByCPU) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByCPU) Less(i, j int) bool {
 	p1, p2 := p[i], p[j]
 	p1Total := p1.UtimeDiff + p1.StimeDiff
 	p2Total := p2.UtimeDiff + p2.StimeDiff
 	if p1Total == p2Total {
-		// Fall back to sorting by PID
-		return p1.Pid < p2.Pid
+		return p1.PID < p2.PID
+	}
+	return p1Total > p2Total
+}
+
+// ByTime sorts by the amount of CPU time used total.
+type ByTime []*Process
+
+func (p ByTime) Len() int      { return len(p) }
+func (p ByTime) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByTime) Less(i, j int) bool {
+	p1, p2 := p[i], p[j]
+	p1Total := p1.Utime + p1.Stime
+	p2Total := p2.Utime + p2.Stime
+	if p1Total == p2Total {
+		return p1.PID < p2.PID
 	}
 	return p1Total > p2Total
 }

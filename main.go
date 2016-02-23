@@ -1,14 +1,39 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/nsf/termbox-go"
 )
 
+var (
+	sortFlag = flag.String("sort", "cpu", "Column to sort processes by")
+)
+
+func validateSortFlag() {
+	sortColumns := []string{"pid", "user", "cpu", "time"}
+	for _, column := range sortColumns {
+		if *sortFlag == column {
+			return
+		}
+	}
+	fmt.Fprintf(os.Stderr, "Can't sort by %s, available sort columns: %s\n",
+		*sortFlag, strings.Join(sortColumns, ", "))
+	os.Exit(1)
+}
+
+func validateFlags() {
+	validateSortFlag()
+}
+
 func main() {
+	flag.Parse()
+	validateFlags()
+
 	if err := termbox.Init(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

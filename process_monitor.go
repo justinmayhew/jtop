@@ -73,7 +73,16 @@ func (pm *ProcessMonitor) Update() {
 
 	pm.removeDeadProcesses()
 
-	sort.Sort(ByCPUTimeDiff(pm.List))
+	switch *sortFlag {
+	case "pid":
+		sort.Sort(ByPID(pm.List))
+	case "user":
+		sort.Sort(ByUser(pm.List))
+	case "cpu":
+		sort.Sort(ByCPU(pm.List))
+	case "time":
+		sort.Sort(ByTime(pm.List))
+	}
 
 	// sanity check
 	if len(pm.List) != len(pm.Map) {
@@ -83,7 +92,7 @@ func (pm *ProcessMonitor) Update() {
 
 func (pm *ProcessMonitor) addProcess(p *Process) {
 	pm.List = append(pm.List, p)
-	pm.Map[p.Pid] = p
+	pm.Map[p.PID] = p
 }
 
 func (pm *ProcessMonitor) removeDeadProcesses() {
@@ -92,7 +101,7 @@ func (pm *ProcessMonitor) removeDeadProcesses() {
 
 		if !p.Alive {
 			pm.List = append(pm.List[:i], pm.List[i+1:]...)
-			delete(pm.Map, p.Pid)
+			delete(pm.Map, p.PID)
 		}
 	}
 }
