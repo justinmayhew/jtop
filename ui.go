@@ -133,24 +133,40 @@ func (ui *UI) HandleResize() {
 
 func (ui *UI) HandleDown() {
 	if ui.shouldScrollDown() {
-		ui.start++
+		ui.scrollDown()
 		return
 	}
 
 	if !ui.bottomSelected() {
-		ui.selected++
+		ui.down()
 	}
 }
 
 func (ui *UI) HandleUp() {
 	if ui.shouldScrollUp() {
-		ui.start--
+		ui.scrollUp()
 		return
 	}
 
 	if !ui.topSelected() {
-		ui.selected--
+		ui.up()
 	}
+}
+
+func (ui *UI) down() {
+	ui.selected++
+}
+
+func (ui *UI) up() {
+	ui.selected--
+}
+
+func (ui *UI) scrollDown() {
+	ui.start++
+}
+
+func (ui *UI) scrollUp() {
+	ui.start--
 }
 
 func (ui *UI) shouldScrollDown() bool {
