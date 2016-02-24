@@ -170,11 +170,11 @@ func (ui *UI) scrollUp() {
 }
 
 func (ui *UI) shouldScrollDown() bool {
-	return ui.bottomSelected() && ui.moreProcessesToShow()
+	return ui.bottomSelected() && ui.moreProcessesDown()
 }
 
 func (ui *UI) shouldScrollUp() bool {
-	return ui.topSelected() && ui.start > 0
+	return ui.topSelected() && ui.moreProcessesUp()
 }
 
 func (ui *UI) bottomSelected() bool {
@@ -190,8 +190,12 @@ func (ui *UI) topSelected() bool {
 	return ui.selected == 0
 }
 
-func (ui *UI) moreProcessesToShow() bool {
+func (ui *UI) moreProcessesDown() bool {
 	return len(ui.pm.List)-ui.start > ui.numProcessesOnScreen()
+}
+
+func (ui *UI) moreProcessesUp() bool {
+	return ui.start > 0
 }
 
 func (ui *UI) numProcessesOnScreen() int {
