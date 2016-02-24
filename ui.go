@@ -35,8 +35,8 @@ type UI struct {
 	width  int
 	height int
 
-	startIdx    int
-	selectedIdx int
+	start    int
+	selected int
 }
 
 func NewUI(pm *ProcessMonitor) *UI {
@@ -79,7 +79,7 @@ func (ui *UI) Draw() {
 		fg = termbox.ColorDefault
 		bg = termbox.ColorDefault
 
-		if i == ui.selectedIdx {
+		if i == ui.selected {
 			fg = termbox.ColorBlack
 			bg = termbox.ColorCyan
 		}
@@ -133,23 +133,23 @@ func (ui *UI) HandleResize() {
 
 func (ui *UI) HandleDown() {
 	if ui.shouldScrollDown() {
-		ui.startIdx++
+		ui.start++
 		return
 	}
 
 	if !ui.bottomSelected() {
-		ui.selectedIdx++
+		ui.selected++
 	}
 }
 
 func (ui *UI) HandleUp() {
 	if ui.shouldScrollUp() {
-		ui.startIdx--
+		ui.start--
 		return
 	}
 
 	if !ui.topSelected() {
-		ui.selectedIdx--
+		ui.selected--
 	}
 }
 
@@ -158,24 +158,24 @@ func (ui *UI) shouldScrollDown() bool {
 }
 
 func (ui *UI) shouldScrollUp() bool {
-	return ui.topSelected() && ui.startIdx > 0
+	return ui.topSelected() && ui.start > 0
 }
 
 func (ui *UI) bottomSelected() bool {
-	bottomIdx := len(ui.pm.List) - 1
+	bottom := len(ui.pm.List) - 1
 	if len(ui.pm.List) > ui.numProcessesOnScreen() {
 		// Not all processes fit on the same screen
-		bottomIdx = ui.numProcessesOnScreen() - 1
+		bottom = ui.numProcessesOnScreen() - 1
 	}
-	return ui.selectedIdx == bottomIdx
+	return ui.selected == bottom
 }
 
 func (ui *UI) topSelected() bool {
-	return ui.selectedIdx == 0
+	return ui.selected == 0
 }
 
 func (ui *UI) moreProcessesToShow() bool {
-	return len(ui.pm.List)-ui.startIdx > ui.numProcessesOnScreen()
+	return len(ui.pm.List)-ui.start > ui.numProcessesOnScreen()
 }
 
 func (ui *UI) numProcessesOnScreen() int {
@@ -188,27 +188,27 @@ func (ui *UI) updateTerminalSize() {
 
 func (ui *UI) visibleProcesses() []*Process {
 	// Maybe all processes will fit on the same screen
-	endIdx := len(ui.pm.List)
+	end := len(ui.pm.List)
 
 	// Maybe they won't
-	if endIdx > ui.numProcessesOnScreen() {
-		endIdx = ui.startIdx + ui.numProcessesOnScreen()
+	if end > ui.numProcessesOnScreen() {
+		end = ui.start + ui.numProcessesOnScreen()
 
 		// Maybe we need to scroll up because some process(es) died
-		if endIdx > len(ui.pm.List) {
-			diff := endIdx - len(ui.pm.List)
-			ui.startIdx -= diff
-			endIdx -= diff
+		if end > len(ui.pm.List) {
+			diff := end - len(ui.pm.List)
+			ui.start -= diff
+			end -= diff
 		}
 	}
 
 	// When bottom process is selected and a process dies, update selected
 	// to the new bottom process.
-	if ui.selectedIdx >= endIdx {
-		ui.selectedIdx = endIdx - 1
+	if ui.selected >= end {
+		ui.selected = end - 1
 	}
 
-	return ui.pm.List[ui.startIdx:endIdx]
+	return ui.pm.List[ui.start:end]
 }
 
 func writeColumn(s string, columnWidth int, rightAlign bool, x *int, y int, fg, bg termbox.Attribute) {

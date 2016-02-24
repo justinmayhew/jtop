@@ -12,50 +12,50 @@ import (
 
 const (
 	// The indices of the values in /proc/<pid>/stat
-	statPidIdx = iota
-	statCommIdx
-	statStateIdx
-	statPpidIdx
-	statPgrpIdx
-	statSessionIdx
-	statTtyNrIdx
-	statTpgidIdx
-	statFlagsIdx
-	statMinfltIdx
-	statCminfltIdx
-	statMajfltIdx
-	statCmajfltIdx
-	statUtimeIdx
-	statStimeIdx
-	statCutimeIdx
-	statCstimeIdx
-	statPriorityIdx
-	statNiceIdx
-	statNumThreadsIdx
-	statItrealvalueIdx
-	statStartTimeIdx
-	statVsizeIdx
-	statRssIdx
-	statRsslimIdx
-	statStartCodeIdx
-	statEndCodeIdx
-	statStartStackIdx
-	statKstKespIdx
-	statKstKeipIdx
-	statSignalIdx
-	statBlockedIdx
-	statSigIgnoreIdx
-	statSigCatchIdx
-	statWchanIdx
-	statNswapIdx
-	statCnswapIdx
-	statExitSignalIdx
-	statProcessorIdx
-	statRtPriorityIdx
-	statPolicyIdx
-	statDelayActBlkioTicksIdx
-	statGuestTimeIdx
-	statCguestTimeIdx
+	statPid = iota
+	statComm
+	statState
+	statPpid
+	statPgrp
+	statSession
+	statTtyNr
+	statTpgid
+	statFlags
+	statMinflt
+	statCminflt
+	statMajflt
+	statCmajflt
+	statUtime
+	statStime
+	statCutime
+	statCstime
+	statPriority
+	statNice
+	statNumThreads
+	statItrealvalue
+	statStartTime
+	statVsize
+	statRss
+	statRsslim
+	statStartCode
+	statEndCode
+	statStartStack
+	statKstKesp
+	statKstKeip
+	statSignal
+	statBlocked
+	statSigIgnore
+	statSigCatch
+	statWchan
+	statNswap
+	statCnswap
+	statExitSignal
+	statProcessor
+	statRtPriority
+	statPolicy
+	statDelayActBlkioTicks
+	statGuestTime
+	statCguestTime
 )
 
 // Process represents an operating system process.
@@ -151,20 +151,20 @@ func (p *Process) parseStatFile() error {
 	line := string(data)
 	values := strings.Split(line, " ")
 
-	p.Pgrp, err = strconv.Atoi(values[statPgrpIdx])
+	p.Pgrp, err = strconv.Atoi(values[statPgrp])
 	if err != nil {
 		panic(err)
 	}
 
 	lastUtime := p.Utime
-	p.Utime, err = strconv.ParseUint(values[statUtimeIdx], 10, 64)
+	p.Utime, err = strconv.ParseUint(values[statUtime], 10, 64)
 	if err != nil {
 		panic(err)
 	}
 	p.UtimeDiff = p.Utime - lastUtime
 
 	lastStime := p.Stime
-	p.Stime, err = strconv.ParseUint(values[statStimeIdx], 10, 64)
+	p.Stime, err = strconv.ParseUint(values[statStime], 10, 64)
 	if err != nil {
 		panic(err)
 	}
