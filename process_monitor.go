@@ -73,7 +73,7 @@ func (pm *ProcessMonitor) Update() {
 
 	pm.removeDeadProcesses()
 
-	switch *sortFlag {
+	switch sortFlag {
 	case "pid":
 		sort.Sort(ByPID(pm.List))
 	case "user":

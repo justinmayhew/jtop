@@ -4,30 +4,77 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/user"
 	"strings"
 	"time"
 
 	"github.com/nsf/termbox-go"
 )
 
-var (
-	sortFlag = flag.String("sort", "cpu", "Column to sort processes by")
+const usage = `Usage: gtop [options]
+
+Options:
+  -s, --sort   sort processes by the specified column (%s)
+  -u, --users  only show processes owned by certain users (comma-separated list)
+`
+
+const (
+	defaultSortColumn = "cpu"
 )
 
+var (
+	sortColumns = []string{"pid", "user", "cpu", "time"}
+	sortFlag    string
+	usersFlag   string
+)
+
+func exit(message string) {
+	fmt.Fprintln(os.Stderr, message)
+	flag.Usage()
+	os.Exit(1)
+}
+
 func validateSortFlag() {
-	sortColumns := []string{"pid", "user", "cpu", "time"}
 	for _, column := range sortColumns {
-		if *sortFlag == column {
+		if sortFlag == column {
 			return
 		}
 	}
-	fmt.Fprintf(os.Stderr, "Can't sort by %s, available sort columns: %s\n",
-		*sortFlag, strings.Join(sortColumns, ", "))
-	os.Exit(1)
+	message := fmt.Sprintf("flag error: %s is not a valid sort column", sortFlag)
+	exit(message)
+}
+
+func validateUsersFlag() {
+	if usersFlag == "" {
+		return
+	}
+
+	users := strings.Split(usersFlag, ",")
+	for _, username := range users {
+		if user, err := user.Lookup(username); err != nil {
+			message := fmt.Sprintf("flag error: user %s does not exist", username)
+			exit(message)
+		} else {
+			UserWhitelist = append(UserWhitelist, user)
+		}
+	}
 }
 
 func validateFlags() {
 	validateSortFlag()
+	validateUsersFlag()
+}
+
+func init() {
+	flag.StringVar(&sortFlag, "s", defaultSortColumn, "")
+	flag.StringVar(&sortFlag, "sort", defaultSortColumn, "")
+
+	flag.StringVar(&usersFlag, "u", "", "")
+	flag.StringVar(&usersFlag, "users", "", "")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stdout, usage, strings.Join(sortColumns, ", "))
+	}
 }
 
 func main() {
@@ -36,7 +83,7 @@ func main() {
 
 	if err := termbox.Init(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(2)
 	}
 	defer termbox.Close()
 

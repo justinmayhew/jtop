@@ -229,7 +229,7 @@ func writeLastColumn(s string, terminalWidth, x, y int, fg, bg termbox.Attribute
 }
 
 func bgForTitle(title string) termbox.Attribute {
-	if title == *sortFlag {
+	if title == sortFlag {
 		return titleSortBG
 	}
 	return titleBG
