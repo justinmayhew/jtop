@@ -73,12 +73,7 @@ func (ui *UI) Draw() {
 
 	y++
 
-	displayProcesses := ui.pm.List[ui.startIdx:len(ui.pm.List)]
-	if ui.startIdx+ui.height < len(ui.pm.List) {
-		displayProcesses = ui.pm.List[ui.startIdx : ui.startIdx+ui.height]
-	}
-
-	for i, process := range displayProcesses {
+	for i, process := range ui.visibleProcesses() {
 		x = 0
 
 		fg = termbox.ColorDefault
@@ -189,6 +184,31 @@ func (ui *UI) numProcessesOnScreen() int {
 
 func (ui *UI) updateTerminalSize() {
 	ui.width, ui.height = termbox.Size()
+}
+
+func (ui *UI) visibleProcesses() []*Process {
+	// Maybe all processes will fit on the same screen
+	endIdx := len(ui.pm.List)
+
+	// Maybe they won't
+	if endIdx > ui.numProcessesOnScreen() {
+		endIdx = ui.startIdx + ui.numProcessesOnScreen()
+
+		// Maybe we need to scroll up because some process(es) died
+		if endIdx > len(ui.pm.List) {
+			diff := endIdx - len(ui.pm.List)
+			ui.startIdx -= diff
+			endIdx -= diff
+		}
+	}
+
+	// When bottom process is selected and a process dies, update selected
+	// to the new bottom process.
+	if ui.selectedIdx >= endIdx {
+		ui.selectedIdx = endIdx - 1
+	}
+
+	return ui.pm.List[ui.startIdx:endIdx]
 }
 
 func writeColumn(s string, columnWidth int, rightAlign bool, x *int, y int, fg, bg termbox.Attribute) {
