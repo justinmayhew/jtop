@@ -69,7 +69,10 @@ func (ui *UI) Draw() {
 	writeColumn(timeColumnTitle, timeColumnWidth, true, &x, y, fg, bg)
 
 	bg = bgForTitle("command")
-	writeLastColumn(commandColumnTitle, ui.width, x, y, fg, bg)
+	writeColumn(commandColumnTitle, len(commandColumnTitle), false, &x, y, fg, bg)
+
+	bg = titleBG
+	writeLastColumn("", ui.width, x, y, fg, bg)
 
 	y++
 

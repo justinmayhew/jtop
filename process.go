@@ -248,3 +248,12 @@ func (p ByTime) Less(i, j int) bool {
 	}
 	return p1Total > p2Total
 }
+
+// ByName sorts by Name.
+type ByName []*Process
+
+func (p ByName) Len() int      { return len(p) }
+func (p ByName) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByName) Less(i, j int) bool {
+	return p[i].Name < p[j].Name
+}

@@ -82,6 +82,8 @@ func (pm *ProcessMonitor) Update() {
 		sort.Sort(ByCPU(pm.List))
 	case "time":
 		sort.Sort(ByTime(pm.List))
+	case "command":
+		sort.Sort(ByName(pm.List))
 	}
 
 	// sanity check

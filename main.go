@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	sortColumns = []string{"pid", "user", "cpu", "time"}
+	sortColumns = []string{"pid", "user", "cpu", "time", "command"}
 	sortFlag    string
 	usersFlag   string
 	verboseFlag bool
