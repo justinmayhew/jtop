@@ -84,11 +84,11 @@ func NewProcess(pid int) *Process {
 		PID: pid,
 	}
 
-	if err := p.parseCmdlineFile(); err != nil {
+	if err := p.Update(); err != nil {
 		return nil
 	}
 
-	if err := p.Update(); err != nil {
+	if err := p.parseCmdlineFile(); err != nil {
 		return nil
 	}
 
