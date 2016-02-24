@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/user"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -119,7 +118,7 @@ func (p *Process) IsKernelThread() bool {
 
 // statProcDir updates p with any information it needs from statting /proc/<pid>.
 func (p *Process) statProcDir() error {
-	path := filepath.Join("/proc", strconv.Itoa(p.PID))
+	path := path.Join("/proc", strconv.Itoa(p.PID))
 
 	var stat syscall.Stat_t
 	if err := syscall.Stat(path, &stat); err != nil {
@@ -137,7 +136,7 @@ func (p *Process) statProcDir() error {
 
 // parseStatFile updates p with any information it needs from /proc/<pid>/stat.
 func (p *Process) parseStatFile() error {
-	path := filepath.Join("/proc", strconv.Itoa(p.PID), "stat")
+	path := path.Join("/proc", strconv.Itoa(p.PID), "stat")
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -177,7 +176,7 @@ func (p *Process) parseStatFile() error {
 
 // parseCmdlineFile sets p's Command via /proc/<pid>/cmdline.
 func (p *Process) parseCmdlineFile() error {
-	path := filepath.Join("/proc", strconv.Itoa(p.PID), "cmdline")
+	path := path.Join("/proc", strconv.Itoa(p.PID), "cmdline")
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
