@@ -119,7 +119,11 @@ func (ui *UI) Draw() {
 		writeColumn(timeColumn, timeColumnWidth, true, &x, y, fg, bg)
 
 		// Command
-		writeLastColumn(process.Command, ui.width, x, y, fg, bg)
+		commandColumn := process.Name
+		if verboseFlag {
+			commandColumn = process.Command
+		}
+		writeLastColumn(commandColumn, ui.width, x, y, fg, bg)
 
 		y++
 	}

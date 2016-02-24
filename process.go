@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -62,7 +63,8 @@ const (
 type Process struct {
 	PID     int
 	User    *user.User
-	Command string
+	Name    string // foo
+	Command string // /usr/bin/foo --args
 
 	// Alive is a flag used by ProcessMonitor to determine if it should remove
 	// this process.
@@ -182,12 +184,25 @@ func (p *Process) parseCmdlineFile() error {
 		return err
 	}
 
-	s := string(data)
-	p.Command = strings.TrimSpace(strings.Replace(s, "\x00", " ", -1))
+	cmdline := string(data)
+	p.Command = strings.TrimSpace(strings.Replace(cmdline, "\x00", " ", -1))
+	p.Name = commandToName(p.Command)
 	return nil
 }
 
-// ByPid sorts by PID.
+// commandToName takes a string in a format like "/usr/bin/foo --arguments"
+// and returns its base name without arguments, "foo".
+func commandToName(cmdline string) string {
+	command := strings.Split(cmdline, " ")[0]
+	if strings.HasSuffix(command, ":") {
+		// For processes that set their name in a format like
+		// "postgres: writer process" the value is returned as is.
+		return cmdline
+	}
+	return path.Base(command)
+}
+
+// ByPID sorts by PID.
 type ByPID []*Process
 
 func (p ByPID) Len() int      { return len(p) }

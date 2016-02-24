@@ -14,8 +14,9 @@ import (
 const usage = `Usage: gtop [options]
 
 Options:
-  -s, --sort   sort processes by the specified column (%s)
-  -u, --users  only show processes owned by certain users (comma-separated list)
+  -s, --sort     sort by the specified column (%s)
+  -u, --users    filter by user (comma-separated list)
+      --verbose  show full command line with arguments
 `
 
 const (
@@ -26,6 +27,7 @@ var (
 	sortColumns = []string{"pid", "user", "cpu", "time"}
 	sortFlag    string
 	usersFlag   string
+	verboseFlag bool
 )
 
 func exit(message string) {
@@ -72,6 +74,8 @@ func init() {
 	flag.StringVar(&usersFlag, "u", "", "")
 	flag.StringVar(&usersFlag, "users", "", "")
 
+	flag.BoolVar(&verboseFlag, "verbose", false, "")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stdout, usage, strings.Join(sortColumns, ", "))
 	}
@@ -111,12 +115,12 @@ func main() {
 				switch {
 				case ev.Ch == 'q':
 					return
-
 				case ev.Ch == 'j' || ev.Key == termbox.KeyArrowDown:
 					ui.HandleDown()
-
 				case ev.Ch == 'k' || ev.Key == termbox.KeyArrowUp:
 					ui.HandleUp()
+				case ev.Ch == 'v':
+					verboseFlag = !verboseFlag
 				}
 			} else if ev.Type == termbox.EventResize {
 				ui.HandleResize()
