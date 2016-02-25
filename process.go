@@ -60,7 +60,7 @@ const (
 
 // Process represents an operating system process.
 type Process struct {
-	PID     int
+	PID     uint64
 	User    *user.User
 	Name    string // foo
 	Command string // /usr/bin/foo --args
@@ -80,7 +80,7 @@ type Process struct {
 
 // NewProcess returns a new Process if a process is currently running on
 // the system with the passed in PID.
-func NewProcess(pid int) *Process {
+func NewProcess(pid uint64) *Process {
 	p := &Process{
 		PID: pid,
 	}
@@ -118,7 +118,7 @@ func (p *Process) IsKernelThread() bool {
 
 // statProcDir updates p with any information it needs from statting /proc/<pid>.
 func (p *Process) statProcDir() error {
-	path := path.Join("/proc", strconv.Itoa(p.PID))
+	path := path.Join("/proc", strconv.FormatUint(p.PID, 10))
 
 	var stat syscall.Stat_t
 	if err := syscall.Stat(path, &stat); err != nil {
@@ -136,7 +136,7 @@ func (p *Process) statProcDir() error {
 
 // parseStatFile updates p with any information it needs from /proc/<pid>/stat.
 func (p *Process) parseStatFile() error {
-	path := path.Join("/proc", strconv.Itoa(p.PID), "stat")
+	path := path.Join("/proc", strconv.FormatUint(p.PID, 10), "stat")
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -176,7 +176,7 @@ func (p *Process) parseStatFile() error {
 
 // parseCmdlineFile sets p's Command via /proc/<pid>/cmdline.
 func (p *Process) parseCmdlineFile() error {
-	path := path.Join("/proc", strconv.Itoa(p.PID), "cmdline")
+	path := path.Join("/proc", strconv.FormatUint(p.PID, 10), "cmdline")
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {

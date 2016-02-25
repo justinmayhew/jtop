@@ -88,7 +88,7 @@ func (ui *UI) Draw() {
 		}
 
 		// PID
-		pidColumn := strconv.Itoa(process.PID)
+		pidColumn := strconv.FormatUint(process.PID, 10)
 		writeColumn(pidColumn, pidColumnWidth, true, &x, y, fg, bg)
 
 		// User

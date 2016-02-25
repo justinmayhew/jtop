@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,8 +15,9 @@ import (
 const usage = `Usage: gtop [options]
 
 Options:
+  -p, --pids     filter by PID (comma-separated list)
   -s, --sort     sort by the specified column (%s)
-  -u, --users    filter by user (comma-separated list)
+  -u, --users    filter by User (comma-separated list)
       --verbose  show full command line with arguments
 `
 
@@ -24,16 +26,34 @@ const (
 )
 
 var (
-	sortColumns = []string{"pid", "user", "cpu", "time", "command"}
+	pidsFlag    string
 	sortFlag    string
 	usersFlag   string
 	verboseFlag bool
+
+	sortColumns = []string{"pid", "user", "cpu", "time", "command"}
 )
 
 func exit(message string) {
 	fmt.Fprintln(os.Stderr, message)
 	flag.Usage()
 	os.Exit(1)
+}
+
+func validatePIDFlag() {
+	if pidsFlag == "" {
+		return
+	}
+
+	pids := strings.Split(pidsFlag, ",")
+	for _, value := range pids {
+		if pid, err := strconv.ParseUint(value, 10, 64); err != nil {
+			message := fmt.Sprintf("flag error: %s is not a valid PID", value)
+			exit(message)
+		} else {
+			PIDWhitelist = append(PIDWhitelist, pid)
+		}
+	}
 }
 
 func validateSortFlag() {
@@ -63,11 +83,15 @@ func validateUsersFlag() {
 }
 
 func validateFlags() {
+	validatePIDFlag()
 	validateSortFlag()
 	validateUsersFlag()
 }
 
 func init() {
+	flag.StringVar(&pidsFlag, "p", "", "")
+	flag.StringVar(&pidsFlag, "pids", "", "")
+
 	flag.StringVar(&sortFlag, "s", defaultSortColumn, "")
 	flag.StringVar(&sortFlag, "sort", defaultSortColumn, "")
 

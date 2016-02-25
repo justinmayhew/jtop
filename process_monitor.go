@@ -10,10 +10,27 @@ import (
 	"strings"
 )
 
+var (
+	// PIDWhitelist contains the PIDs whitelisted via the --pid option.
+	PIDWhitelist []uint64
+)
+
+func pidWhitelisted(pid uint64) bool {
+	if len(PIDWhitelist) == 0 {
+		return true
+	}
+	for _, p := range PIDWhitelist {
+		if p == pid {
+			return true
+		}
+	}
+	return false
+}
+
 // ProcessMonitor keeps tracks of the processes running on the system.
 type ProcessMonitor struct {
 	List []*Process
-	Map  map[int]*Process
+	Map  map[uint64]*Process
 
 	NumCPUs      int
 	CPUTimeTotal uint64
@@ -23,7 +40,7 @@ type ProcessMonitor struct {
 // NewProcessMonitor returns an initialized ProcessMonitor ready for use.
 func NewProcessMonitor() *ProcessMonitor {
 	pm := &ProcessMonitor{}
-	pm.Map = make(map[int]*Process)
+	pm.Map = make(map[uint64]*Process)
 	pm.NumCPUs = runtime.NumCPU()
 	return pm
 }
@@ -49,9 +66,13 @@ func (pm *ProcessMonitor) Update() {
 			continue
 		}
 
-		pid, err := strconv.Atoi(file.Name())
+		pid, err := strconv.ParseUint(file.Name(), 10, 64)
 		if err != nil {
 			continue // non-PID directory
+		}
+
+		if !pidWhitelisted(pid) {
+			continue
 		}
 
 		if p, ok := pm.Map[pid]; ok {
