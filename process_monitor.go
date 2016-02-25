@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	// PIDWhitelist contains the PIDs whitelisted via the --pid option.
+	// PIDWhitelist contains the PIDs whitelisted via the --pids option.
 	PIDWhitelist []uint64
 )
 

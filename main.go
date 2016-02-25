@@ -40,7 +40,7 @@ func exit(message string) {
 	os.Exit(1)
 }
 
-func validatePIDFlag() {
+func validatePIDsFlag() {
 	if pidsFlag == "" {
 		return
 	}
@@ -83,7 +83,7 @@ func validateUsersFlag() {
 }
 
 func validateFlags() {
-	validatePIDFlag()
+	validatePIDsFlag()
 	validateSortFlag()
 	validateUsersFlag()
 }
