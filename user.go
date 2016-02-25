@@ -17,17 +17,15 @@ var (
 // UserByUID returns a User for a particular UID. An error will be returned
 // if a User with that UID does not exist or if the User is not whitelisted.
 func UserByUID(uid string) (*user.User, error) {
-	if len(UserWhitelist) > 0 {
-		// Invoked with the --users argument, ensure `uid` is whitelisted.
-		for _, user := range UserWhitelist {
-			if user.Uid == uid {
-				return userByUID(uid)
-			}
-		}
-		return nil, ErrNotWhitelisted
+	if len(UserWhitelist) == 0 {
+		return userByUID(uid)
 	}
-
-	return userByUID(uid)
+	for _, user := range UserWhitelist {
+		if user.Uid == uid {
+			return userByUID(uid)
+		}
+	}
+	return nil, ErrNotWhitelisted
 }
 
 func userByUID(uid string) (*user.User, error) {
