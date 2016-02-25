@@ -20,7 +20,7 @@ const (
 	cpuColumnWidth = 5
 
 	timeColumnTitle = "TIME+"
-	timeColumnWidth = 8
+	timeColumnWidth = 9
 
 	commandColumnTitle = "Command"
 
@@ -109,7 +109,7 @@ func (ui *UI) Draw() {
 		// Time
 		hertz := uint64(100)
 		// TODO: this has only been tested on my Ubuntu 14.04 system that has
-		// a CLK_TICK of 100. Test on other configurations. (getconf CLK_TICK)
+		// a CLK_TCK of 100. Test on other configurations. (getconf CLK_TCK)
 		totalJiffies := process.Utime + process.Stime
 		totalSeconds := totalJiffies / hertz
 
