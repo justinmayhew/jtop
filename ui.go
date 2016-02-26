@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
 
@@ -99,11 +100,7 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	ui.writeColumn(pidColumn, pidColumnWidth, true)
 
 	// User
-	maxUserLen := len(process.User.Username)
-	if maxUserLen > userColumnWidth {
-		maxUserLen = userColumnWidth
-	}
-	userColumn := process.User.Username[0:maxUserLen]
+	userColumn := runewidth.Truncate(process.User.Username, userColumnWidth, "+")
 	ui.writeColumn(userColumn, userColumnWidth, false)
 
 	// CPU Percentage
@@ -243,8 +240,9 @@ func (ui *UI) visibleProcesses() []*Process {
 }
 
 func (ui *UI) writeColumn(s string, columnWidth int, rightAlign bool) {
+	sWidth := runewidth.StringWidth(s)
 	if rightAlign {
-		for i := 0; i < columnWidth-len(s); i++ {
+		for i := 0; i < columnWidth-sWidth; i++ {
 			ui.setCell(' ')
 		}
 	}
@@ -254,7 +252,7 @@ func (ui *UI) writeColumn(s string, columnWidth int, rightAlign bool) {
 	}
 
 	if !rightAlign {
-		for i := 0; i < columnWidth-len(s); i++ {
+		for i := 0; i < columnWidth-sWidth; i++ {
 			ui.setCell(' ')
 		}
 	}
@@ -274,7 +272,7 @@ func (ui *UI) writeLastColumn(s string) {
 
 func (ui *UI) setCell(ch rune) {
 	termbox.SetCell(ui.x, ui.y, ch, ui.fg, ui.bg)
-	ui.x++
+	ui.x += runewidth.RuneWidth(ch)
 }
 
 func bgForTitle(column string) termbox.Attribute {
