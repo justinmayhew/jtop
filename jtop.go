@@ -15,6 +15,7 @@ import (
 const usage = `Usage: jtop [options]
 
 Options:
+  -d, --delay    delay between updates
   -p, --pids     filter by PID (comma-separated list)
   -s, --sort     sort by the specified column (%s)
   -u, --users    filter by User (comma-separated list)
@@ -22,10 +23,12 @@ Options:
 `
 
 const (
-	defaultSortColumn = "cpu"
+	defaultSortColumn  = "cpu"
+	defaultUpdateDelay = time.Duration(1500 * time.Millisecond)
 )
 
 var (
+	delayFlag   time.Duration
 	pidsFlag    string
 	sortFlag    string
 	usersFlag   string
@@ -89,6 +92,9 @@ func validateFlags() {
 }
 
 func init() {
+	flag.DurationVar(&delayFlag, "d", defaultUpdateDelay, "")
+	flag.DurationVar(&delayFlag, "delay", defaultUpdateDelay, "")
+
 	flag.StringVar(&pidsFlag, "p", "", "")
 	flag.StringVar(&pidsFlag, "pids", "", "")
 
@@ -122,7 +128,7 @@ func main() {
 		}
 	}()
 
-	ticker := time.Tick(1500 * time.Millisecond)
+	ticker := time.Tick(delayFlag)
 	monitor := NewMonitor()
 	monitor.Update()
 	ui := NewUI(monitor)
