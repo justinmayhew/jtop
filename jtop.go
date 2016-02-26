@@ -12,7 +12,7 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-const usage = `Usage: gtop [options]
+const usage = `Usage: jtop [options]
 
 Options:
   -p, --pids     filter by PID (comma-separated list)
