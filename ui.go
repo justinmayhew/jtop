@@ -22,7 +22,7 @@ const (
 	timeColumnTitle = "TIME+"
 	timeColumnWidth = 9
 
-	commandColumnTitle = "Command"
+	commandColumnTitle = "COMMAND"
 
 	titleFG     = termbox.ColorBlack
 	titleBG     = termbox.ColorGreen
@@ -32,11 +32,17 @@ const (
 type UI struct {
 	pm *ProcessMonitor
 
-	width  int
-	height int
+	x int
+	y int
+
+	fg termbox.Attribute
+	bg termbox.Attribute
 
 	start    int
 	selected int
+
+	width  int
+	height int
 }
 
 func NewUI(pm *ProcessMonitor) *UI {
@@ -49,89 +55,87 @@ func NewUI(pm *ProcessMonitor) *UI {
 
 func (ui *UI) Draw() {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-
-	y := 0
-	x := 0
-
-	fg := titleFG
-	bg := titleBG
-
-	bg = bgForTitle("pid")
-	writeColumn(pidColumnTitle, pidColumnWidth, true, &x, y, fg, bg)
-
-	bg = bgForTitle("user")
-	writeColumn(userColumnTitle, userColumnWidth, false, &x, y, fg, bg)
-
-	bg = bgForTitle("cpu")
-	writeColumn(cpuColumnTitle, cpuColumnWidth, true, &x, y, fg, bg)
-
-	bg = bgForTitle("time")
-	writeColumn(timeColumnTitle, timeColumnWidth, true, &x, y, fg, bg)
-
-	bg = bgForTitle("command")
-	writeColumn(commandColumnTitle, len(commandColumnTitle), false, &x, y, fg, bg)
-
-	bg = titleBG
-	writeLastColumn("", ui.width, x, y, fg, bg)
-
-	y++
-
+	ui.drawHeader()
 	for i, process := range ui.visibleProcesses() {
-		x = 0
+		ui.drawProcess(i, process)
+	}
+	termbox.Flush()
+}
 
-		fg = termbox.ColorDefault
-		bg = termbox.ColorDefault
+func (ui *UI) drawHeader() {
+	ui.y, ui.x = 0, 0
+	ui.fg, ui.bg = titleFG, titleBG
 
-		if i == ui.selected {
-			fg = termbox.ColorBlack
-			bg = termbox.ColorCyan
-		}
+	ui.bg = bgForTitle("pid")
+	ui.writeColumn(pidColumnTitle, pidColumnWidth, true)
 
-		// PID
-		pidColumn := strconv.FormatUint(process.PID, 10)
-		writeColumn(pidColumn, pidColumnWidth, true, &x, y, fg, bg)
+	ui.bg = bgForTitle("user")
+	ui.writeColumn(userColumnTitle, userColumnWidth, false)
 
-		// User
-		maxUserLen := len(process.User.Username)
-		if maxUserLen > userColumnWidth {
-			maxUserLen = userColumnWidth
-		}
-		userColumn := process.User.Username[0:maxUserLen]
-		writeColumn(userColumn, userColumnWidth, false, &x, y, fg, bg)
+	ui.bg = bgForTitle("cpu")
+	ui.writeColumn(cpuColumnTitle, cpuColumnWidth, true)
 
-		// CPU Percentage
-		totalUsage := float64(ui.pm.CPUTimeDiff)
-		userUsage := 100 * float64(process.UtimeDiff) / totalUsage
-		systemUsage := 100 * float64(process.StimeDiff) / totalUsage
-		cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(ui.pm.NumCPUs))
-		writeColumn(cpuColumn, cpuColumnWidth, true, &x, y, fg, bg)
+	ui.bg = bgForTitle("time")
+	ui.writeColumn(timeColumnTitle, timeColumnWidth, true)
 
-		// Time
-		hertz := uint64(100)
-		// TODO: this has only been tested on my Ubuntu 14.04 system that has
-		// a CLK_TCK of 100. Test on other configurations. (getconf CLK_TCK)
-		totalJiffies := process.Utime + process.Stime
-		totalSeconds := totalJiffies / hertz
+	ui.bg = bgForTitle("command")
+	ui.writeColumn(commandColumnTitle, len(commandColumnTitle), false)
 
-		minutes := totalSeconds / 60
-		seconds := totalSeconds % 60
-		hundredths := totalJiffies % hertz
+	ui.bg = titleBG
+	ui.writeLastColumn("")
 
-		// FIXME: this won't be pretty when minutes gets big, maybe format hours?
-		timeColumn := fmt.Sprintf("%d:%02d:%02d", minutes, seconds, hundredths)
-		writeColumn(timeColumn, timeColumnWidth, true, &x, y, fg, bg)
+	ui.y++
+}
 
-		// Command
-		commandColumn := process.Name
-		if verboseFlag {
-			commandColumn = process.Command
-		}
-		writeLastColumn(commandColumn, ui.width, x, y, fg, bg)
-
-		y++
+func (ui *UI) drawProcess(i int, process *Process) {
+	ui.x = 0
+	ui.fg, ui.bg = termbox.ColorDefault, termbox.ColorDefault
+	if i == ui.selected {
+		ui.fg, ui.bg = termbox.ColorBlack, termbox.ColorCyan
 	}
 
-	termbox.Flush()
+	// PID
+	pidColumn := strconv.FormatUint(process.PID, 10)
+	ui.writeColumn(pidColumn, pidColumnWidth, true)
+
+	// User
+	maxUserLen := len(process.User.Username)
+	if maxUserLen > userColumnWidth {
+		maxUserLen = userColumnWidth
+	}
+	userColumn := process.User.Username[0:maxUserLen]
+	ui.writeColumn(userColumn, userColumnWidth, false)
+
+	// CPU Percentage
+	totalUsage := float64(ui.pm.CPUTimeDiff)
+	userUsage := 100 * float64(process.UtimeDiff) / totalUsage
+	systemUsage := 100 * float64(process.StimeDiff) / totalUsage
+	cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(ui.pm.NumCPUs))
+	ui.writeColumn(cpuColumn, cpuColumnWidth, true)
+
+	// Time
+	hertz := uint64(100)
+	// TODO: this has only been tested on my Ubuntu 14.04 system that has
+	// a CLK_TCK of 100. Test on other configurations. (getconf CLK_TCK)
+	totalJiffies := process.Utime + process.Stime
+	totalSeconds := totalJiffies / hertz
+
+	minutes := totalSeconds / 60
+	seconds := totalSeconds % 60
+	hundredths := totalJiffies % hertz
+
+	// FIXME: this won't be pretty when minutes gets big, maybe format hours?
+	timeColumn := fmt.Sprintf("%d:%02d:%02d", minutes, seconds, hundredths)
+	ui.writeColumn(timeColumn, timeColumnWidth, true)
+
+	// Command
+	commandColumn := process.Name
+	if verboseFlag {
+		commandColumn = process.Command
+	}
+	ui.writeLastColumn(commandColumn)
+
+	ui.y++
 }
 
 func (ui *UI) HandleResize() {
@@ -238,45 +242,43 @@ func (ui *UI) visibleProcesses() []*Process {
 	return ui.pm.List[ui.start:end]
 }
 
-func writeColumn(s string, columnWidth int, rightAlign bool, x *int, y int, fg, bg termbox.Attribute) {
+func (ui *UI) writeColumn(s string, columnWidth int, rightAlign bool) {
 	if rightAlign {
 		for i := 0; i < columnWidth-len(s); i++ {
-			termbox.SetCell(*x, y, ' ', fg, bg)
-			*x++
+			ui.setCell(' ')
 		}
 	}
 
 	for _, ch := range s {
-		termbox.SetCell(*x, y, ch, fg, bg)
-		*x++
+		ui.setCell(ch)
 	}
 
 	if !rightAlign {
 		for i := 0; i < columnWidth-len(s); i++ {
-			termbox.SetCell(*x, y, ' ', fg, bg)
-			*x++
+			ui.setCell(' ')
 		}
 	}
 
-	// Space to separate columns
-	termbox.SetCell(*x, y, ' ', fg, bg)
-	*x++
+	ui.setCell(' ')
 }
 
-func writeLastColumn(s string, terminalWidth, x, y int, fg, bg termbox.Attribute) {
+func (ui *UI) writeLastColumn(s string) {
 	for _, ch := range s {
-		termbox.SetCell(x, y, ch, fg, bg)
-		x++
+		ui.setCell(ch)
 	}
 
-	for x < terminalWidth {
-		termbox.SetCell(x, y, ' ', fg, bg)
-		x++
+	for ui.x < ui.width {
+		ui.setCell(' ')
 	}
 }
 
-func bgForTitle(title string) termbox.Attribute {
-	if title == sortFlag {
+func (ui *UI) setCell(ch rune) {
+	termbox.SetCell(ui.x, ui.y, ch, ui.fg, ui.bg)
+	ui.x++
+}
+
+func bgForTitle(column string) termbox.Attribute {
+	if column == sortFlag {
 		return titleSortBG
 	}
 	return titleBG
