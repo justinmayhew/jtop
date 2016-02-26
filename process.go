@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	// The indices of the values in /proc/<pid>/stat
+	// The values in /proc/<pid>/stat
 	statPid = iota
 	statComm
 	statState
@@ -96,9 +96,9 @@ func NewProcess(pid uint64) *Process {
 	return p
 }
 
-// Update updates the Process from various files in /proc/<pid>. It returns an
-// error if the process was unable to be updated (probably because the process
-// is no longer running).
+// Update updates Process from various files in /proc/<pid>. It returns an
+// error if Process was unable to be updated (probably because the actual OS
+// process is no longer running).
 func (p *Process) Update() error {
 	if err := p.statProcDir(); err != nil {
 		return err
@@ -116,7 +116,6 @@ func (p *Process) IsKernelThread() bool {
 	return p.Pgrp == 0
 }
 
-// statProcDir updates p with any information it needs from statting /proc/<pid>.
 func (p *Process) statProcDir() error {
 	path := path.Join("/proc", strconv.FormatUint(p.PID, 10))
 
@@ -134,7 +133,6 @@ func (p *Process) statProcDir() error {
 	return nil
 }
 
-// parseStatFile updates p with any information it needs from /proc/<pid>/stat.
 func (p *Process) parseStatFile() error {
 	path := path.Join("/proc", strconv.FormatUint(p.PID, 10), "stat")
 
@@ -174,7 +172,6 @@ func (p *Process) parseStatFile() error {
 	return nil
 }
 
-// parseCmdlineFile sets p's Command via /proc/<pid>/cmdline.
 func (p *Process) parseCmdlineFile() error {
 	path := path.Join("/proc", strconv.FormatUint(p.PID, 10), "cmdline")
 

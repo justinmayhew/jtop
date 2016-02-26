@@ -31,7 +31,7 @@ const (
 )
 
 type UI struct {
-	pm *ProcessMonitor
+	monitor *Monitor
 
 	x int
 	y int
@@ -46,9 +46,9 @@ type UI struct {
 	height int
 }
 
-func NewUI(pm *ProcessMonitor) *UI {
+func NewUI(monitor *Monitor) *UI {
 	ui := &UI{
-		pm: pm,
+		monitor: monitor,
 	}
 	ui.updateTerminalSize()
 	return ui
@@ -104,10 +104,10 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	ui.writeColumn(userColumn, userColumnWidth, false)
 
 	// CPU Percentage
-	totalUsage := float64(ui.pm.CPUTimeDiff)
+	totalUsage := float64(ui.monitor.CPUTimeDiff)
 	userUsage := 100 * float64(process.UtimeDiff) / totalUsage
 	systemUsage := 100 * float64(process.StimeDiff) / totalUsage
-	cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(ui.pm.NumCPUs))
+	cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(ui.monitor.NumCPUs))
 	ui.writeColumn(cpuColumn, cpuColumnWidth, true)
 
 	// Time
@@ -186,8 +186,8 @@ func (ui *UI) shouldScrollUp() bool {
 }
 
 func (ui *UI) bottomSelected() bool {
-	bottom := len(ui.pm.List) - 1
-	if len(ui.pm.List) > ui.numProcessesOnScreen() {
+	bottom := len(ui.monitor.List) - 1
+	if len(ui.monitor.List) > ui.numProcessesOnScreen() {
 		// Not all processes fit on the same screen
 		bottom = ui.numProcessesOnScreen() - 1
 	}
@@ -199,7 +199,7 @@ func (ui *UI) topSelected() bool {
 }
 
 func (ui *UI) moreProcessesDown() bool {
-	return len(ui.pm.List)-ui.start > ui.numProcessesOnScreen()
+	return len(ui.monitor.List)-ui.start > ui.numProcessesOnScreen()
 }
 
 func (ui *UI) moreProcessesUp() bool {
@@ -216,15 +216,15 @@ func (ui *UI) updateTerminalSize() {
 
 func (ui *UI) visibleProcesses() []*Process {
 	// Maybe all processes will fit on the same screen
-	end := len(ui.pm.List)
+	end := len(ui.monitor.List)
 
 	// Maybe they won't
 	if end > ui.numProcessesOnScreen() {
 		end = ui.start + ui.numProcessesOnScreen()
 
 		// Maybe we need to scroll up because some process(es) died
-		if end > len(ui.pm.List) {
-			diff := end - len(ui.pm.List)
+		if end > len(ui.monitor.List) {
+			diff := end - len(ui.monitor.List)
 			ui.start -= diff
 			end -= diff
 		}
@@ -236,7 +236,7 @@ func (ui *UI) visibleProcesses() []*Process {
 		ui.selected = end - 1
 	}
 
-	return ui.pm.List[ui.start:end]
+	return ui.monitor.List[ui.start:end]
 }
 
 func (ui *UI) writeColumn(s string, columnWidth int, rightAlign bool) {

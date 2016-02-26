@@ -27,8 +27,8 @@ func pidWhitelisted(pid uint64) bool {
 	return false
 }
 
-// ProcessMonitor keeps tracks of the processes running on the system.
-type ProcessMonitor struct {
+// Monitor monitors the processes and resource utilization of the system.
+type Monitor struct {
 	List []*Process
 	Map  map[uint64]*Process
 
@@ -37,19 +37,19 @@ type ProcessMonitor struct {
 	CPUTimeDiff  uint64
 }
 
-// NewProcessMonitor returns an initialized ProcessMonitor ready for use.
-func NewProcessMonitor() *ProcessMonitor {
-	pm := &ProcessMonitor{}
-	pm.Map = make(map[uint64]*Process)
-	pm.NumCPUs = runtime.NumCPU()
-	return pm
+// NewMonitor returns an initialized Monitor.
+func NewMonitor() *Monitor {
+	return &Monitor{
+		Map:     make(map[uint64]*Process),
+		NumCPUs: runtime.NumCPU(),
+	}
 }
 
-// Update updates the ProcessMonitor's state via the /proc filesystem.
-func (pm *ProcessMonitor) Update() {
-	lastCPUTimeTotal := pm.CPUTimeTotal
-	pm.parseStatFile()
-	pm.CPUTimeDiff = pm.CPUTimeTotal - lastCPUTimeTotal
+// Update updates the Monitor state via the proc filesystem.
+func (m *Monitor) Update() {
+	lastCPUTimeTotal := m.CPUTimeTotal
+	m.parseStatFile()
+	m.CPUTimeDiff = m.CPUTimeTotal - lastCPUTimeTotal
 
 	files, err := ioutil.ReadDir("/proc")
 	if err != nil {
@@ -57,7 +57,7 @@ func (pm *ProcessMonitor) Update() {
 	}
 
 	// Mark all processes as Dead
-	for _, p := range pm.List {
+	for _, p := range m.List {
 		p.Alive = false
 	}
 
@@ -75,7 +75,7 @@ func (pm *ProcessMonitor) Update() {
 			continue
 		}
 
-		if p, ok := pm.Map[pid]; ok {
+		if p, ok := m.Map[pid]; ok {
 			err := p.Update()
 			if err == nil {
 				p.Alive = true
@@ -86,50 +86,45 @@ func (pm *ProcessMonitor) Update() {
 				p.Alive = true
 
 				if !p.IsKernelThread() {
-					pm.addProcess(p)
+					m.addProcess(p)
 				}
 			}
 		}
 	}
 
-	pm.removeDeadProcesses()
+	m.removeDeadProcesses()
 
 	switch sortFlag {
 	case "pid":
-		sort.Sort(ByPID(pm.List))
+		sort.Sort(ByPID(m.List))
 	case "user":
-		sort.Sort(ByUser(pm.List))
+		sort.Sort(ByUser(m.List))
 	case "cpu":
-		sort.Sort(ByCPU(pm.List))
+		sort.Sort(ByCPU(m.List))
 	case "time":
-		sort.Sort(ByTime(pm.List))
+		sort.Sort(ByTime(m.List))
 	case "command":
-		sort.Sort(ByName(pm.List))
-	}
-
-	// sanity check
-	if len(pm.List) != len(pm.Map) {
-		panic("list and map are not in sync")
+		sort.Sort(ByName(m.List))
 	}
 }
 
-func (pm *ProcessMonitor) addProcess(p *Process) {
-	pm.List = append(pm.List, p)
-	pm.Map[p.PID] = p
+func (m *Monitor) addProcess(p *Process) {
+	m.List = append(m.List, p)
+	m.Map[p.PID] = p
 }
 
-func (pm *ProcessMonitor) removeDeadProcesses() {
-	for i := len(pm.List) - 1; i >= 0; i-- {
-		p := pm.List[i]
+func (m *Monitor) removeDeadProcesses() {
+	for i := len(m.List) - 1; i >= 0; i-- {
+		p := m.List[i]
 
 		if !p.Alive {
-			pm.List = append(pm.List[:i], pm.List[i+1:]...)
-			delete(pm.Map, p.PID)
+			m.List = append(m.List[:i], m.List[i+1:]...)
+			delete(m.Map, p.PID)
 		}
 	}
 }
 
-func (pm *ProcessMonitor) parseStatFile() {
+func (m *Monitor) parseStatFile() {
 	file, err := os.Open("/proc/stat")
 	if err != nil {
 		panic(err)
@@ -140,14 +135,14 @@ func (pm *ProcessMonitor) parseStatFile() {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "cpu ") {
-			pm.CPUTimeTotal = 0
+			m.CPUTimeTotal = 0
 			cpuTimeValues := strings.Split(line, " ")[2:] // skip "cpu" and ""
 			for _, cpuTimeValue := range cpuTimeValues {
 				value, err := strconv.ParseUint(cpuTimeValue, 10, 64)
 				if err != nil {
 					panic(err)
 				}
-				pm.CPUTimeTotal += value
+				m.CPUTimeTotal += value
 			}
 
 			// Only parsing the first line for now, ignore rest of file.

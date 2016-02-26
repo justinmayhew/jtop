@@ -123,16 +123,16 @@ func main() {
 	}()
 
 	ticker := time.Tick(1500 * time.Millisecond)
-	pm := NewProcessMonitor()
-	pm.Update()
-	ui := NewUI(pm)
+	monitor := NewMonitor()
+	monitor.Update()
+	ui := NewUI(monitor)
 
 	for {
 		ui.Draw()
 
 		select {
 		case <-ticker:
-			pm.Update()
+			monitor.Update()
 
 		case ev := <-events:
 			if ev.Type == termbox.EventKey {
