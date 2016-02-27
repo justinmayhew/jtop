@@ -60,7 +60,7 @@ const (
 
 // Process represents an operating system process.
 type Process struct {
-	PID     uint64
+	Pid     uint64
 	User    *user.User
 	Name    string // foo
 	Command string // /usr/bin/foo --args
@@ -70,7 +70,7 @@ type Process struct {
 	Alive bool
 
 	// Data from /proc/<pid>/stat
-	Pgrp  int
+	Pgrp  uint64
 	Utime uint64
 	Stime uint64
 
@@ -79,10 +79,10 @@ type Process struct {
 }
 
 // NewProcess returns a new Process if a process is currently running on
-// the system with the passed in PID.
+// the system with the passed in Pid.
 func NewProcess(pid uint64) *Process {
 	p := &Process{
-		PID: pid,
+		Pid: pid,
 	}
 
 	if err := p.Update(); err != nil {
@@ -117,14 +117,14 @@ func (p *Process) IsKernelThread() bool {
 }
 
 func (p *Process) statProcDir() error {
-	path := path.Join("/proc", strconv.FormatUint(p.PID, 10))
+	path := path.Join("/proc", strconv.FormatUint(p.Pid, 10))
 
 	var stat syscall.Stat_t
 	if err := syscall.Stat(path, &stat); err != nil {
 		return err
 	}
 
-	user, err := UserByUID(strconv.FormatUint(uint64(stat.Uid), 10))
+	user, err := UserByUid(strconv.FormatUint(uint64(stat.Uid), 10))
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (p *Process) statProcDir() error {
 }
 
 func (p *Process) parseStatFile() error {
-	path := path.Join("/proc", strconv.FormatUint(p.PID, 10), "stat")
+	path := path.Join("/proc", strconv.FormatUint(p.Pid, 10), "stat")
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -150,7 +150,7 @@ func (p *Process) parseStatFile() error {
 	line := string(data)
 	values := strings.Split(line, " ")
 
-	p.Pgrp, err = strconv.Atoi(values[statPgrp])
+	p.Pgrp, err = strconv.ParseUint(values[statPgrp], 10, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -173,7 +173,7 @@ func (p *Process) parseStatFile() error {
 }
 
 func (p *Process) parseCmdlineFile() error {
-	path := path.Join("/proc", strconv.FormatUint(p.PID, 10), "cmdline")
+	path := path.Join("/proc", strconv.FormatUint(p.Pid, 10), "cmdline")
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -198,13 +198,13 @@ func commandToName(cmdline string) string {
 	return path.Base(command)
 }
 
-// ByPID sorts by PID.
-type ByPID []*Process
+// ByPid sorts by Pid.
+type ByPid []*Process
 
-func (p ByPID) Len() int      { return len(p) }
-func (p ByPID) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
-func (p ByPID) Less(i, j int) bool {
-	return p[i].PID < p[j].PID
+func (p ByPid) Len() int      { return len(p) }
+func (p ByPid) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByPid) Less(i, j int) bool {
+	return p[i].Pid < p[j].Pid
 }
 
 // ByUser sorts by the username of the processes user.
@@ -226,7 +226,7 @@ func (p ByCPU) Less(i, j int) bool {
 	p1Total := p1.UtimeDiff + p1.StimeDiff
 	p2Total := p2.UtimeDiff + p2.StimeDiff
 	if p1Total == p2Total {
-		return p1.PID < p2.PID
+		return p1.Pid < p2.Pid
 	}
 	return p1Total > p2Total
 }
@@ -241,7 +241,7 @@ func (p ByTime) Less(i, j int) bool {
 	p1Total := p1.Utime + p1.Stime
 	p2Total := p2.Utime + p2.Stime
 	if p1Total == p2Total {
-		return p1.PID < p2.PID
+		return p1.Pid < p2.Pid
 	}
 	return p1Total > p2Total
 }

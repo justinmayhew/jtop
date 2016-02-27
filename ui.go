@@ -95,8 +95,8 @@ func (ui *UI) drawProcess(i int, process *Process) {
 		ui.fg, ui.bg = termbox.ColorBlack, termbox.ColorCyan
 	}
 
-	// PID
-	pidColumn := strconv.FormatUint(process.PID, 10)
+	// Pid
+	pidColumn := strconv.FormatUint(process.Pid, 10)
 	ui.writeColumn(pidColumn, pidColumnWidth, true)
 
 	// User

@@ -11,15 +11,15 @@ import (
 )
 
 var (
-	// PIDWhitelist contains the PIDs whitelisted via the --pids option.
-	PIDWhitelist []uint64
+	// PidWhitelist contains the Pids whitelisted via the --pids option.
+	PidWhitelist []uint64
 )
 
 func pidWhitelisted(pid uint64) bool {
-	if len(PIDWhitelist) == 0 {
+	if len(PidWhitelist) == 0 {
 		return true
 	}
-	for _, p := range PIDWhitelist {
+	for _, p := range PidWhitelist {
 		if p == pid {
 			return true
 		}
@@ -68,7 +68,7 @@ func (m *Monitor) Update() {
 
 		pid, err := strconv.ParseUint(file.Name(), 10, 64)
 		if err != nil {
-			continue // non-PID directory
+			continue // non-Pid directory
 		}
 
 		if !pidWhitelisted(pid) {
@@ -96,7 +96,7 @@ func (m *Monitor) Update() {
 
 	switch sortFlag {
 	case "pid":
-		sort.Sort(ByPID(m.List))
+		sort.Sort(ByPid(m.List))
 	case "user":
 		sort.Sort(ByUser(m.List))
 	case "cpu":
@@ -110,7 +110,7 @@ func (m *Monitor) Update() {
 
 func (m *Monitor) addProcess(p *Process) {
 	m.List = append(m.List, p)
-	m.Map[p.PID] = p
+	m.Map[p.Pid] = p
 }
 
 func (m *Monitor) removeDeadProcesses() {
@@ -119,7 +119,7 @@ func (m *Monitor) removeDeadProcesses() {
 
 		if !p.Alive {
 			m.List = append(m.List[:i], m.List[i+1:]...)
-			delete(m.Map, p.PID)
+			delete(m.Map, p.Pid)
 		}
 	}
 }

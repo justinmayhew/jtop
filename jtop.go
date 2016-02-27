@@ -49,7 +49,7 @@ func validateDelayFlag() {
 	}
 }
 
-func validatePIDsFlag() {
+func validatePidsFlag() {
 	if pidsFlag == "" {
 		return
 	}
@@ -60,7 +60,7 @@ func validatePIDsFlag() {
 			message := fmt.Sprintf("flag error: %s is not a valid PID", value)
 			exit(message)
 		} else {
-			PIDWhitelist = append(PIDWhitelist, pid)
+			PidWhitelist = append(PidWhitelist, pid)
 		}
 	}
 }
@@ -93,7 +93,7 @@ func validateUsersFlag() {
 
 func validateFlags() {
 	validateDelayFlag()
-	validatePIDsFlag()
+	validatePidsFlag()
 	validateSortFlag()
 	validateUsersFlag()
 }

@@ -14,21 +14,21 @@ var (
 	users = map[string]*user.User{}
 )
 
-// UserByUID returns a User for a particular UID. An error will be returned
-// if a User with that UID does not exist or if the User is not whitelisted.
-func UserByUID(uid string) (*user.User, error) {
+// UserByUid returns a User for a particular Uid. An error will be returned
+// if a User with that Uid does not exist or if the User is not whitelisted.
+func UserByUid(uid string) (*user.User, error) {
 	if len(UserWhitelist) == 0 {
-		return userByUID(uid)
+		return userByUid(uid)
 	}
 	for _, user := range UserWhitelist {
 		if user.Uid == uid {
-			return userByUID(uid)
+			return userByUid(uid)
 		}
 	}
 	return nil, ErrNotWhitelisted
 }
 
-func userByUID(uid string) (*user.User, error) {
+func userByUid(uid string) (*user.User, error) {
 	if user, ok := users[uid]; ok {
 		return user, nil
 	}
