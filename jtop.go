@@ -43,6 +43,12 @@ func exit(message string) {
 	os.Exit(1)
 }
 
+func validateDelayFlag() {
+	if delayFlag <= 0 {
+		exit("flag error: delay must be positive")
+	}
+}
+
 func validatePIDsFlag() {
 	if pidsFlag == "" {
 		return
@@ -86,6 +92,7 @@ func validateUsersFlag() {
 }
 
 func validateFlags() {
+	validateDelayFlag()
 	validatePIDsFlag()
 	validateSortFlag()
 	validateUsersFlag()
