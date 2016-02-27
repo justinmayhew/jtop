@@ -17,6 +17,12 @@ const (
 	userColumnTitle = "USER"
 	userColumnWidth = 8
 
+	rssColumnTitle = "RSS"
+	rssColumnWidth = 5
+
+	memColumnTitle = "%MEM"
+	memColumnWidth = 5
+
 	cpuColumnTitle = "%CPU"
 	cpuColumnWidth = 5
 
@@ -67,19 +73,25 @@ func (ui *UI) drawHeader() {
 	ui.y, ui.x = 0, 0
 	ui.fg, ui.bg = titleFG, titleBG
 
-	ui.bg = bgForTitle("pid")
+	ui.bg = bgForTitle(PidColumn)
 	ui.writeColumn(pidColumnTitle, pidColumnWidth, true)
 
-	ui.bg = bgForTitle("user")
+	ui.bg = bgForTitle(UserColumn)
 	ui.writeColumn(userColumnTitle, userColumnWidth, false)
 
-	ui.bg = bgForTitle("cpu")
+	ui.bg = bgForTitle(RSSColumn)
+	ui.writeColumn(rssColumnTitle, rssColumnWidth, true)
+
+	ui.bg = bgForTitle(MemPercentColumn)
+	ui.writeColumn(memColumnTitle, memColumnWidth, true)
+
+	ui.bg = bgForTitle(CPUPercentColumn)
 	ui.writeColumn(cpuColumnTitle, cpuColumnWidth, true)
 
-	ui.bg = bgForTitle("time")
+	ui.bg = bgForTitle(CPUTimeColumn)
 	ui.writeColumn(timeColumnTitle, timeColumnWidth, true)
 
-	ui.bg = bgForTitle("command")
+	ui.bg = bgForTitle(CommandColumn)
 	ui.writeColumn(commandColumnTitle, len(commandColumnTitle), false)
 
 	ui.bg = titleBG
@@ -103,6 +115,19 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	userColumn := runewidth.Truncate(process.User.Username, userColumnWidth, "+")
 	ui.writeColumn(userColumn, userColumnWidth, false)
 
+	// RSS
+	rssB := process.RSS * ui.monitor.PageSize
+	rssColumn := fmt.Sprintf("%dM", rssB/MB)
+	if rssB < MB {
+		rssColumn = fmt.Sprintf("%dK", rssB/KB)
+	}
+	ui.writeColumn(rssColumn, rssColumnWidth, true)
+
+	// Memory Percentage
+	memUsage := 100 * float64(rssB) / float64(ui.monitor.MemTotal)
+	memColumn := fmt.Sprintf("%.1f", memUsage)
+	ui.writeColumn(memColumn, memColumnWidth, true)
+
 	// CPU Percentage
 	totalUsage := float64(ui.monitor.CPUTimeDiff)
 	userUsage := 100 * float64(process.UtimeDiff) / totalUsage
@@ -110,7 +135,7 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(ui.monitor.NumCPUs))
 	ui.writeColumn(cpuColumn, cpuColumnWidth, true)
 
-	// Time
+	// CPU Time
 	hertz := uint64(100)
 	// TODO: this has only been tested on my Ubuntu 14.04 system that has
 	// a CLK_TCK of 100. Test on other configurations. (getconf CLK_TCK)

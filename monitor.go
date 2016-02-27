@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"runtime"
 	"sort"
 	"strconv"
@@ -32,17 +34,23 @@ type Monitor struct {
 	List []*Process
 	Map  map[uint64]*Process
 
-	NumCPUs      int
+	NumCPUs  int
+	MemTotal uint64
+	PageSize uint64
+
 	CPUTimeTotal uint64
 	CPUTimeDiff  uint64
 }
 
 // NewMonitor returns an initialized Monitor.
 func NewMonitor() *Monitor {
-	return &Monitor{
+	m := &Monitor{
 		Map:     make(map[uint64]*Process),
 		NumCPUs: runtime.NumCPU(),
 	}
+	m.queryPageSize()
+	m.parseMeminfoFile()
+	return m
 }
 
 // Update updates the Monitor state via the proc filesystem.
@@ -95,15 +103,17 @@ func (m *Monitor) Update() {
 	m.removeDeadProcesses()
 
 	switch sortFlag {
-	case "pid":
+	case PidColumn:
 		sort.Sort(ByPid(m.List))
-	case "user":
+	case UserColumn:
 		sort.Sort(ByUser(m.List))
-	case "cpu":
+	case RSSColumn, MemPercentColumn:
+		sort.Sort(ByRSS(m.List))
+	case CPUPercentColumn:
 		sort.Sort(ByCPU(m.List))
-	case "time":
+	case CPUTimeColumn:
 		sort.Sort(ByTime(m.List))
-	case "command":
+	case CommandColumn:
 		sort.Sort(ByName(m.List))
 	}
 }
@@ -145,11 +155,54 @@ func (m *Monitor) parseStatFile() {
 				m.CPUTimeTotal += value
 			}
 
-			// Only parsing the first line for now, ignore rest of file.
+			// Only parsing the CPU jiffies for now, ignore rest of file.
 			break
 		}
 	}
 	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+}
+
+func (m *Monitor) parseMeminfoFile() {
+	file, err := os.Open("/proc/meminfo")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "MemTotal:") {
+			// As far as I know this value is always expressed in KB.
+			// line = "MemTotal:       16371752 kB"
+			memKBStr := strings.TrimPrefix(line, "MemTotal:")
+			var memKB uint64
+			_, err := fmt.Sscanf(memKBStr, "%d", &memKB)
+			if err != nil {
+				panic(err)
+			}
+			m.MemTotal = memKB * KB
+
+			// Only parsing the MemTotal for now, ignore rest of file.
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+}
+
+func (m *Monitor) queryPageSize() {
+	out, err := exec.Command("getconf", "PAGESIZE").Output()
+	if err != nil {
+		panic(err)
+	}
+
+	pageSizeStr := strings.TrimSpace(string(out))
+	m.PageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
+	if err != nil {
 		panic(err)
 	}
 }

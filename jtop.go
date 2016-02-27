@@ -12,6 +12,15 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+const (
+	_  = iota
+	KB = 1 << (10 * iota)
+	MB
+	GB
+	TB
+	PB
+)
+
 const usage = `Usage: jtop [options]
 
 Options:
@@ -27,6 +36,16 @@ const (
 	defaultUpdateDelay = time.Duration(1500 * time.Millisecond)
 )
 
+const (
+	PidColumn        = "pid"
+	UserColumn       = "user"
+	RSSColumn        = "rss"
+	MemPercentColumn = "mem"
+	CPUPercentColumn = "cpu"
+	CPUTimeColumn    = "time"
+	CommandColumn    = "command"
+)
+
 var (
 	delayFlag   time.Duration
 	pidsFlag    string
@@ -34,7 +53,15 @@ var (
 	usersFlag   string
 	verboseFlag bool
 
-	sortColumns = []string{"pid", "user", "cpu", "time", "command"}
+	sortColumns = []string{
+		PidColumn,
+		UserColumn,
+		RSSColumn,
+		MemPercentColumn,
+		CPUPercentColumn,
+		CPUTimeColumn,
+		CommandColumn,
+	}
 )
 
 func exit(message string) {

@@ -35,8 +35,8 @@ const (
 	statItrealvalue
 	statStartTime
 	statVsize
-	statRss
-	statRsslim
+	statRSS
+	statRSSLimit
 	statStartCode
 	statEndCode
 	statStartStack
@@ -73,6 +73,7 @@ type Process struct {
 	Pgrp  uint64
 	Utime uint64
 	Stime uint64
+	RSS   uint64
 
 	UtimeDiff uint64
 	StimeDiff uint64
@@ -169,6 +170,11 @@ func (p *Process) parseStatFile() error {
 	}
 	p.StimeDiff = p.Stime - lastStime
 
+	p.RSS, err = strconv.ParseUint(values[statRSS], 10, 64)
+	if err != nil {
+		panic(err)
+	}
+
 	return nil
 }
 
@@ -214,6 +220,15 @@ func (p ByUser) Len() int      { return len(p) }
 func (p ByUser) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p ByUser) Less(i, j int) bool {
 	return p[i].User.Username < p[j].User.Username
+}
+
+// ByRSS sorts by resident set size.
+type ByRSS []*Process
+
+func (p ByRSS) Len() int      { return len(p) }
+func (p ByRSS) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByRSS) Less(i, j int) bool {
+	return p[i].RSS > p[j].RSS
 }
 
 // ByCPU sorts by the amount of CPU time used since the last update.
