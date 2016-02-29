@@ -2,7 +2,6 @@ package main
 
 import (
 	"io/ioutil"
-	"os"
 	"os/user"
 	"path"
 	"strconv"
@@ -137,13 +136,7 @@ func (p *Process) statProcDir() error {
 func (p *Process) parseStatFile() error {
 	path := path.Join("/proc", strconv.FormatUint(p.Pid, 10), "stat")
 
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	data, err := ioutil.ReadAll(file)
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
