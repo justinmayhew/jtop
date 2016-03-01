@@ -176,6 +176,20 @@ func (ui *UI) HandleUp() {
 	}
 }
 
+func (ui *UI) HandleCtrlD() {
+	halfPage := ui.numProcessesOnScreen() / 2
+	for i := 0; i < halfPage; i++ {
+		ui.HandleDown()
+	}
+}
+
+func (ui *UI) HandleCtrlU() {
+	halfPage := ui.numProcessesOnScreen() / 2
+	for i := 0; i < halfPage; i++ {
+		ui.HandleUp()
+	}
+}
+
 func (ui *UI) down() {
 	ui.selected++
 }

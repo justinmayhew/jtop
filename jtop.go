@@ -162,6 +162,10 @@ func main() {
 					ui.HandleUp()
 				case ev.Ch == 'v':
 					verboseFlag = !verboseFlag
+				case ev.Key == termbox.KeyCtrlD:
+					ui.HandleCtrlD()
+				case ev.Key == termbox.KeyCtrlU:
+					ui.HandleCtrlU()
 				}
 			} else if ev.Type == termbox.EventResize {
 				ui.HandleResize()
