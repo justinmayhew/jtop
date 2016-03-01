@@ -26,24 +26,13 @@ const usage = `Usage: jtop [options]
 Options:
   -d, --delay    delay between updates
   -p, --pids     filter by PID (comma-separated list)
-  -s, --sort     sort by the specified column (%s)
+  -s, --sort     sort by the specified column
   -u, --users    filter by User (comma-separated list)
       --verbose  show full command line with arguments
 `
 
 const (
-	defaultSortColumn  = "cpu"
 	defaultUpdateDelay = time.Duration(1500 * time.Millisecond)
-)
-
-const (
-	PidColumn        = "pid"
-	UserColumn       = "user"
-	RSSColumn        = "rss"
-	MemPercentColumn = "mem"
-	CPUPercentColumn = "cpu"
-	CPUTimeColumn    = "time"
-	CommandColumn    = "command"
 )
 
 var (
@@ -53,15 +42,7 @@ var (
 	usersFlag   string
 	verboseFlag bool
 
-	sortColumns = []string{
-		PidColumn,
-		UserColumn,
-		RSSColumn,
-		MemPercentColumn,
-		CPUPercentColumn,
-		CPUTimeColumn,
-		CommandColumn,
-	}
+	defaultSortColumn = CPUPercentColumn
 )
 
 func exit(message string) {
@@ -93,8 +74,8 @@ func validatePidsFlag() {
 }
 
 func validateSortFlag() {
-	for _, column := range sortColumns {
-		if sortFlag == column {
+	for _, column := range Columns {
+		if sortFlag == column.Title {
 			return
 		}
 	}
@@ -132,8 +113,8 @@ func init() {
 	flag.StringVar(&pidsFlag, "p", "", "")
 	flag.StringVar(&pidsFlag, "pids", "", "")
 
-	flag.StringVar(&sortFlag, "s", defaultSortColumn, "")
-	flag.StringVar(&sortFlag, "sort", defaultSortColumn, "")
+	flag.StringVar(&sortFlag, "s", defaultSortColumn.Title, "")
+	flag.StringVar(&sortFlag, "sort", defaultSortColumn.Title, "")
 
 	flag.StringVar(&usersFlag, "u", "", "")
 	flag.StringVar(&usersFlag, "users", "", "")
@@ -141,7 +122,7 @@ func init() {
 	flag.BoolVar(&verboseFlag, "verbose", false, "")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stdout, usage, strings.Join(sortColumns, ", "))
+		fmt.Fprint(os.Stdout, usage)
 	}
 }
 

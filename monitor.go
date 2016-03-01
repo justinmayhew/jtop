@@ -103,17 +103,17 @@ func (m *Monitor) Update() {
 	m.removeDeadProcesses()
 
 	switch sortFlag {
-	case PidColumn:
+	case PidColumn.Title:
 		sort.Sort(ByPid(m.List))
-	case UserColumn:
+	case UserColumn.Title:
 		sort.Sort(ByUser(m.List))
-	case RSSColumn, MemPercentColumn:
+	case RSSColumn.Title, MemPercentColumn.Title:
 		sort.Sort(ByRSS(m.List))
-	case CPUPercentColumn:
+	case CPUPercentColumn.Title:
 		sort.Sort(ByCPU(m.List))
-	case CPUTimeColumn:
+	case CPUTimeColumn.Title:
 		sort.Sort(ByTime(m.List))
-	case CommandColumn:
+	case CommandColumn.Title:
 		sort.Sort(ByName(m.List))
 	}
 }

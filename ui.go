@@ -11,29 +11,35 @@ import (
 const (
 	headerRows = 1
 
-	pidColumnTitle = "PID"
-	pidColumnWidth = 5 // 32768 is the max pid on my system
-
-	userColumnTitle = "USER"
-	userColumnWidth = 8
-
-	rssColumnTitle = "RSS"
-	rssColumnWidth = 5
-
-	memColumnTitle = "%MEM"
-	memColumnWidth = 5
-
-	cpuColumnTitle = "%CPU"
-	cpuColumnWidth = 5
-
-	timeColumnTitle = "TIME+"
-	timeColumnWidth = 9
-
-	commandColumnTitle = "COMMAND"
-
 	titleFG     = termbox.ColorBlack
 	titleBG     = termbox.ColorGreen
 	titleSortBG = termbox.ColorCyan
+)
+
+type Column struct {
+	Title      string
+	Width      int
+	RightAlign bool
+}
+
+var (
+	PidColumn        = Column{"PID", 5, true}
+	UserColumn       = Column{"USER", 8, false}
+	RSSColumn        = Column{"RSS", 5, true}
+	MemPercentColumn = Column{"%MEM", 5, true}
+	CPUPercentColumn = Column{"%CPU", 5, true}
+	CPUTimeColumn    = Column{"TIME+", 9, true}
+	CommandColumn    = Column{"COMMAND", -1, false}
+
+	Columns = []Column{
+		PidColumn,
+		UserColumn,
+		RSSColumn,
+		MemPercentColumn,
+		CPUPercentColumn,
+		CPUTimeColumn,
+		CommandColumn,
+	}
 )
 
 type UI struct {
@@ -73,26 +79,10 @@ func (ui *UI) drawHeader() {
 	ui.y, ui.x = 0, 0
 	ui.fg, ui.bg = titleFG, titleBG
 
-	ui.bg = bgForTitle(PidColumn)
-	ui.writeColumn(pidColumnTitle, pidColumnWidth, true)
-
-	ui.bg = bgForTitle(UserColumn)
-	ui.writeColumn(userColumnTitle, userColumnWidth, false)
-
-	ui.bg = bgForTitle(RSSColumn)
-	ui.writeColumn(rssColumnTitle, rssColumnWidth, true)
-
-	ui.bg = bgForTitle(MemPercentColumn)
-	ui.writeColumn(memColumnTitle, memColumnWidth, true)
-
-	ui.bg = bgForTitle(CPUPercentColumn)
-	ui.writeColumn(cpuColumnTitle, cpuColumnWidth, true)
-
-	ui.bg = bgForTitle(CPUTimeColumn)
-	ui.writeColumn(timeColumnTitle, timeColumnWidth, true)
-
-	ui.bg = bgForTitle(CommandColumn)
-	ui.writeColumn(commandColumnTitle, len(commandColumnTitle), false)
+	for _, column := range Columns {
+		ui.bg = bgForTitle(column.Title)
+		ui.writeColumn(column.Title, column.Width, column.RightAlign)
+	}
 
 	ui.bg = titleBG
 	ui.writeLastColumn("")
@@ -108,32 +98,32 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	}
 
 	// Pid
-	pidColumn := strconv.FormatUint(process.Pid, 10)
-	ui.writeColumn(pidColumn, pidColumnWidth, true)
+	pid := strconv.FormatUint(process.Pid, 10)
+	ui.writeColumn(pid, PidColumn.Width, PidColumn.RightAlign)
 
 	// User
-	userColumn := runewidth.Truncate(process.User.Username, userColumnWidth, "+")
-	ui.writeColumn(userColumn, userColumnWidth, false)
+	user := runewidth.Truncate(process.User.Username, UserColumn.Width, "+")
+	ui.writeColumn(user, UserColumn.Width, UserColumn.RightAlign)
 
 	// RSS
 	rssB := process.RSS * ui.monitor.PageSize
-	rssColumn := fmt.Sprintf("%dM", rssB/MB)
+	rss := fmt.Sprintf("%dM", rssB/MB)
 	if rssB < MB {
-		rssColumn = fmt.Sprintf("%dK", rssB/KB)
+		rss = fmt.Sprintf("%dK", rssB/KB)
 	}
-	ui.writeColumn(rssColumn, rssColumnWidth, true)
+	ui.writeColumn(rss, RSSColumn.Width, RSSColumn.RightAlign)
 
 	// Memory Percentage
 	memUsage := 100 * float64(rssB) / float64(ui.monitor.MemTotal)
-	memColumn := fmt.Sprintf("%.1f", memUsage)
-	ui.writeColumn(memColumn, memColumnWidth, true)
+	mem := fmt.Sprintf("%.1f", memUsage)
+	ui.writeColumn(mem, MemPercentColumn.Width, MemPercentColumn.RightAlign)
 
 	// CPU Percentage
 	totalUsage := float64(ui.monitor.CPUTimeDiff)
 	userUsage := 100 * float64(process.UtimeDiff) / totalUsage
 	systemUsage := 100 * float64(process.StimeDiff) / totalUsage
-	cpuColumn := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(ui.monitor.NumCPUs))
-	ui.writeColumn(cpuColumn, cpuColumnWidth, true)
+	cpu := fmt.Sprintf("%.1f", (userUsage+systemUsage)*float64(ui.monitor.NumCPUs))
+	ui.writeColumn(cpu, CPUPercentColumn.Width, CPUPercentColumn.RightAlign)
 
 	// CPU Time
 	hertz := uint64(100)
@@ -147,15 +137,15 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	hundredths := totalJiffies % hertz
 
 	// FIXME: this won't be pretty when minutes gets big, maybe format hours?
-	timeColumn := fmt.Sprintf("%d:%02d:%02d", minutes, seconds, hundredths)
-	ui.writeColumn(timeColumn, timeColumnWidth, true)
+	time := fmt.Sprintf("%d:%02d:%02d", minutes, seconds, hundredths)
+	ui.writeColumn(time, CPUTimeColumn.Width, CPUTimeColumn.RightAlign)
 
 	// Command
-	commandColumn := process.Name
+	command := process.Name
 	if verboseFlag {
-		commandColumn = process.Command
+		command = process.Command
 	}
-	ui.writeLastColumn(commandColumn)
+	ui.writeLastColumn(command)
 
 	ui.y++
 }
