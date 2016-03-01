@@ -31,18 +31,12 @@ Options:
       --verbose  show full command line with arguments
 `
 
-const (
-	defaultUpdateDelay = time.Duration(1500 * time.Millisecond)
-)
-
 var (
 	delayFlag   time.Duration
 	pidsFlag    string
 	sortFlag    string
 	usersFlag   string
 	verboseFlag bool
-
-	defaultSortColumn = CPUPercentColumn
 )
 
 func exit(message string) {
@@ -107,14 +101,16 @@ func validateFlags() {
 }
 
 func init() {
-	flag.DurationVar(&delayFlag, "d", defaultUpdateDelay, "")
-	flag.DurationVar(&delayFlag, "delay", defaultUpdateDelay, "")
+	defaultDelay := time.Duration(1500 * time.Millisecond)
+	flag.DurationVar(&delayFlag, "d", defaultDelay, "")
+	flag.DurationVar(&delayFlag, "delay", defaultDelay, "")
 
 	flag.StringVar(&pidsFlag, "p", "", "")
 	flag.StringVar(&pidsFlag, "pids", "", "")
 
-	flag.StringVar(&sortFlag, "s", defaultSortColumn.Title, "")
-	flag.StringVar(&sortFlag, "sort", defaultSortColumn.Title, "")
+	defaultSort := CPUPercentColumn.Title
+	flag.StringVar(&sortFlag, "s", defaultSort, "")
+	flag.StringVar(&sortFlag, "sort", defaultSort, "")
 
 	flag.StringVar(&usersFlag, "u", "", "")
 	flag.StringVar(&usersFlag, "users", "", "")
