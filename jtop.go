@@ -7,6 +7,7 @@ import (
 	"os/user"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -43,6 +44,12 @@ func exit(message string) {
 	fmt.Fprintln(os.Stderr, message)
 	flag.Usage()
 	os.Exit(1)
+}
+
+func signalSelf(sig syscall.Signal) {
+	if err := syscall.Kill(os.Getpid(), sig); err != nil {
+		panic(err)
+	}
 }
 
 func validateDelayFlag() {
@@ -122,14 +129,18 @@ func init() {
 	}
 }
 
-func main() {
-	flag.Parse()
-	validateFlags()
-
+func termboxInit() {
 	if err := termbox.Init(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
+}
+
+func main() {
+	flag.Parse()
+	validateFlags()
+
+	termboxInit()
 	defer termbox.Close()
 
 	events := make(chan termbox.Event)
@@ -154,7 +165,7 @@ func main() {
 		case ev := <-events:
 			if ev.Type == termbox.EventKey {
 				switch {
-				case ev.Ch == 'q':
+				case ev.Ch == 'q' || ev.Key == termbox.KeyCtrlC:
 					return
 				case ev.Ch == 'j' || ev.Key == termbox.KeyArrowDown:
 					ui.HandleDown()
@@ -166,6 +177,10 @@ func main() {
 					ui.HandleCtrlD()
 				case ev.Key == termbox.KeyCtrlU:
 					ui.HandleCtrlU()
+				case ev.Key == termbox.KeyCtrlZ:
+					termbox.Close()
+					signalSelf(syscall.SIGTSTP)
+					termboxInit()
 				}
 			} else if ev.Type == termbox.EventResize {
 				ui.HandleResize()
