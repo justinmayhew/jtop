@@ -109,7 +109,12 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	rssB := process.RSS * ui.monitor.PageSize
 	rss := fmt.Sprintf("%dM", rssB/MB)
 	if rssB < MB {
-		rss = fmt.Sprintf("%dK", rssB/KB)
+		if rssB == 0 {
+			// As far as I've seen only kernel threads have 0 RSS.
+			rss = "0"
+		} else {
+			rss = fmt.Sprintf("%dK", rssB/KB)
+		}
 	}
 	ui.writeColumn(rss, RSSColumn.Width, RSSColumn.RightAlign)
 

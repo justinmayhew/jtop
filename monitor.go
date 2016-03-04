@@ -93,9 +93,10 @@ func (m *Monitor) Update() {
 			if p != nil {
 				p.Alive = true
 
-				if !p.IsKernelThread() {
-					m.addProcess(p)
+				if p.IsKernelThread() && !kernelFlag {
+					continue
 				}
+				m.addProcess(p)
 			}
 		}
 	}

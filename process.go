@@ -12,7 +12,7 @@ import (
 const (
 	// The values in /proc/<pid>/stat
 	statPid = iota
-	statComm
+	statCommand
 	statState
 	statPpid
 	statPgrp
@@ -64,7 +64,7 @@ type Process struct {
 	Name    string // foo
 	Command string // /usr/bin/foo --args
 
-	// Alive is a flag used by ProcessMonitor to determine if it should remove
+	// Alive is a flag used by Monitor to determine if it should remove
 	// this process.
 	Alive bool
 
@@ -89,8 +89,10 @@ func NewProcess(pid uint64) *Process {
 		return nil
 	}
 
-	if err := p.parseCmdlineFile(); err != nil {
-		return nil
+	if !p.IsKernelThread() {
+		if err := p.parseCmdlineFile(); err != nil {
+			return nil
+		}
 	}
 
 	return p
@@ -147,6 +149,14 @@ func (p *Process) parseStatFile() error {
 	p.Pgrp, err = strconv.ParseUint(values[statPgrp], 10, 64)
 	if err != nil {
 		panic(err)
+	}
+
+	if p.IsKernelThread() {
+		// Kernel threads have an empty cmdline file.
+		command := values[statCommand]
+		command = command[1 : len(command)-1] // strip '(' and ')'
+		p.Command = command
+		p.Name = command
 	}
 
 	lastUtime := p.Utime

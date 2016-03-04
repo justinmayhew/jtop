@@ -26,6 +26,7 @@ const usage = `Usage: jtop [options]
 
 Options:
   -d, --delay    delay between updates
+  -k, --kernel   show kernel threads
   -p, --pids     filter by PID (comma-separated list)
   -s, --sort     sort by the specified column
   -u, --users    filter by User (comma-separated list)
@@ -34,6 +35,7 @@ Options:
 
 var (
 	delayFlag   time.Duration
+	kernelFlag  bool
 	pidsFlag    string
 	sortFlag    string
 	usersFlag   string
@@ -111,6 +113,9 @@ func init() {
 	defaultDelay := time.Duration(1500 * time.Millisecond)
 	flag.DurationVar(&delayFlag, "d", defaultDelay, "")
 	flag.DurationVar(&delayFlag, "delay", defaultDelay, "")
+
+	flag.BoolVar(&kernelFlag, "k", false, "")
+	flag.BoolVar(&kernelFlag, "kernel", false, "")
 
 	flag.StringVar(&pidsFlag, "p", "", "")
 	flag.StringVar(&pidsFlag, "pids", "", "")
