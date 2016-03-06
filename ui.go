@@ -17,6 +17,8 @@ const (
 
 	selectedFG = termbox.ColorBlack
 	selectedBG = termbox.ColorCyan
+
+	offsetStep = 5
 )
 
 type Column struct {
@@ -52,6 +54,8 @@ type UI struct {
 
 	x int
 	y int
+
+	offset int
 
 	fg termbox.Attribute
 	bg termbox.Attribute
@@ -179,6 +183,12 @@ func (ui *UI) HandleResize() {
 	ui.updateTerminalSize()
 }
 
+func (ui *UI) HandleLeft() {
+	if ui.offset > 0 {
+		ui.offset--
+	}
+}
+
 func (ui *UI) HandleDown() {
 	if ui.shouldScrollDown() {
 		ui.scrollDown()
@@ -199,6 +209,14 @@ func (ui *UI) HandleUp() {
 	if !ui.topSelected() {
 		ui.up()
 	}
+}
+
+func (ui *UI) HandleRight() {
+	ui.offset++
+}
+
+func (ui *UI) HandleResetOffset() {
+	ui.offset = 0
 }
 
 func (ui *UI) HandleCtrlD() {
@@ -346,7 +364,7 @@ func (ui *UI) writeCommandWithPrefix(command, prefix string) {
 }
 
 func (ui *UI) setCell(ch rune) {
-	termbox.SetCell(ui.x, ui.y, ch, ui.fg, ui.bg)
+	termbox.SetCell(ui.x-(ui.offset*offsetStep), ui.y, ch, ui.fg, ui.bg)
 	ui.x += runewidth.RuneWidth(ch)
 }
 

@@ -176,10 +176,16 @@ func main() {
 				switch {
 				case ev.Ch == 'q' || ev.Key == termbox.KeyCtrlC:
 					return
+				case ev.Ch == 'h' || ev.Key == termbox.KeyArrowLeft:
+					ui.HandleLeft()
 				case ev.Ch == 'j' || ev.Key == termbox.KeyArrowDown:
 					ui.HandleDown()
 				case ev.Ch == 'k' || ev.Key == termbox.KeyArrowUp:
 					ui.HandleUp()
+				case ev.Ch == 'l' || ev.Key == termbox.KeyArrowRight:
+					ui.HandleRight()
+				case ev.Ch == '0' || ev.Ch == '^':
+					ui.HandleResetOffset()
 				case ev.Ch == 't':
 					treeFlag = !treeFlag
 					if treeFlag {
