@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os/user"
 	"path"
@@ -130,6 +131,9 @@ func (p *Process) IsKernelThread() bool {
 	return p.Pgrp == 0
 }
 
+// TreeList returns a Process slice in "tree order" such that iterating
+// over it and printing out the TreePrefix and Command will display a
+// nice overview of the process hierarchy.
 func (p *Process) TreeList(level uint) []*Process {
 	const defaultEnd = "├─ "
 	const lastChildEnd = "└─ "
@@ -172,7 +176,7 @@ func (p *Process) TreeList(level uint) []*Process {
 }
 
 func (p *Process) statProcDir() error {
-	path := path.Join("/proc", strconv.FormatUint(p.Pid, 10))
+	path := fmt.Sprintf("/proc/%d", p.Pid)
 
 	var stat syscall.Stat_t
 	if err := syscall.Stat(path, &stat); err != nil {
@@ -189,7 +193,7 @@ func (p *Process) statProcDir() error {
 }
 
 func (p *Process) parseStatFile() error {
-	path := path.Join("/proc", strconv.FormatUint(p.Pid, 10), "stat")
+	path := fmt.Sprintf("/proc/%d/stat", p.Pid)
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -243,7 +247,7 @@ func (p *Process) hasEmptyCmdlineFile() bool {
 }
 
 func (p *Process) parseCmdlineFile() error {
-	path := path.Join("/proc", strconv.FormatUint(p.Pid, 10), "cmdline")
+	path := fmt.Sprintf("/proc/%d/cmdline", p.Pid)
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {

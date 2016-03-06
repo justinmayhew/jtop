@@ -182,6 +182,9 @@ func main() {
 					ui.HandleUp()
 				case ev.Ch == 't':
 					treeFlag = !treeFlag
+					if treeFlag {
+						monitor.AssociateProcesses()
+					}
 				case ev.Ch == 'v':
 					verboseFlag = !verboseFlag
 				case ev.Key == termbox.KeyCtrlD:

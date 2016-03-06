@@ -90,18 +90,15 @@ func (m *Monitor) Update() {
 		}
 
 		if p, ok := m.Map[pid]; ok {
-			err := p.Update()
-			if err == nil {
+			if err := p.Update(); err == nil {
 				p.Alive = true
 			}
 		} else {
-			p := NewProcess(pid)
-			if p != nil {
-				p.Alive = true
-
+			if p := NewProcess(pid); p != nil {
 				if p.IsKernelThread() && !kernelFlag {
 					continue
 				}
+				p.Alive = true
 				m.addProcess(p)
 			}
 		}
@@ -127,7 +124,7 @@ func (m *Monitor) Update() {
 	}
 
 	if treeFlag {
-		m.associateProcesses()
+		m.AssociateProcesses()
 	}
 }
 
@@ -147,7 +144,8 @@ func (m *Monitor) removeDeadProcesses() {
 	}
 }
 
-func (m *Monitor) associateProcesses() {
+// AssociateProcesses associates each Process with its Parent and Children.
+func (m *Monitor) AssociateProcesses() {
 	for _, p := range m.List {
 		if parent, ok := m.Map[p.Ppid]; ok {
 			p.Parent = parent
