@@ -121,6 +121,8 @@ func (m *Monitor) Update() {
 		sort.Sort(ByCPU(m.List))
 	case CPUTimeColumn.Title:
 		sort.Sort(ByTime(m.List))
+	case StateColumn.Title:
+		sort.Sort(ByState(m.List))
 	case CommandColumn.Title:
 		sort.Sort(ByName(m.List))
 	}

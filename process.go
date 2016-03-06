@@ -75,6 +75,7 @@ type Process struct {
 	isLastChild bool
 
 	// Data from /proc/<pid>/stat
+	State byte
 	Ppid  uint64
 	Pgrp  uint64
 	Utime uint64
@@ -83,25 +84,29 @@ type Process struct {
 
 	UtimeDiff uint64
 	StimeDiff uint64
+
+	initializing bool
 }
 
 // NewProcess returns a new Process if a process is currently running on
 // the system with the passed in Pid.
 func NewProcess(pid uint64) *Process {
 	p := &Process{
-		Pid: pid,
+		Pid:          pid,
+		initializing: true,
 	}
 
 	if err := p.Update(); err != nil {
 		return nil
 	}
 
-	if !p.IsKernelThread() {
+	if !p.hasEmptyCmdlineFile() {
 		if err := p.parseCmdlineFile(); err != nil {
 			return nil
 		}
 	}
 
+	p.initializing = false
 	return p
 }
 
@@ -194,6 +199,13 @@ func (p *Process) parseStatFile() error {
 	line := string(data)
 	values := strings.Split(line, " ")
 
+	// One character from the string "RSDZTW" where R
+	// is running, S is sleeping in an interruptible wait,
+	// D is waiting in uninterruptible disk sleep, Z is
+	// zombie, T is traced or stopped (on a signal), and W
+	// is paging.
+	p.State = values[statState][0]
+
 	p.Ppid, err = strconv.ParseUint(values[statPpid], 10, 64)
 	if err != nil {
 		panic(err)
@@ -202,14 +214,6 @@ func (p *Process) parseStatFile() error {
 	p.Pgrp, err = strconv.ParseUint(values[statPgrp], 10, 64)
 	if err != nil {
 		panic(err)
-	}
-
-	if p.IsKernelThread() {
-		// Kernel threads have an empty cmdline file.
-		command := values[statCommand]
-		command = command[1 : len(command)-1] // strip '(' and ')'
-		p.Command = command
-		p.Name = command
 	}
 
 	lastUtime := p.Utime
@@ -231,7 +235,26 @@ func (p *Process) parseStatFile() error {
 		panic(err)
 	}
 
+	if p.hasEmptyCmdlineFile() {
+		command := values[statCommand]
+		command = command[1 : len(command)-1] // strip '(' and ')'
+		p.Command = command
+		p.Name = command
+	}
+
+	// The state will only be running if it's running at the exact
+	// moment this file was read. That's probably not what the
+	// average user wants, even though it's what top and htop do.
+	// Set it to be running if it's used any CPU since the last update.
+	if !p.initializing && p.State == 'S' && (p.UtimeDiff > 0 || p.StimeDiff > 0) {
+		p.State = 'R'
+	}
+
 	return nil
+}
+
+func (p *Process) hasEmptyCmdlineFile() bool {
+	return p.IsKernelThread() || p.State == 'Z'
 }
 
 func (p *Process) parseCmdlineFile() error {
@@ -260,7 +283,6 @@ func commandToName(cmdline string) string {
 	return path.Base(command)
 }
 
-// ByPid sorts by Pid.
 type ByPid []*Process
 
 func (p ByPid) Len() int      { return len(p) }
@@ -269,7 +291,6 @@ func (p ByPid) Less(i, j int) bool {
 	return p[i].Pid < p[j].Pid
 }
 
-// ByUser sorts by the username of the processes user.
 type ByUser []*Process
 
 func (p ByUser) Len() int      { return len(p) }
@@ -278,7 +299,6 @@ func (p ByUser) Less(i, j int) bool {
 	return p[i].User.Username < p[j].User.Username
 }
 
-// ByRSS sorts by resident set size.
 type ByRSS []*Process
 
 func (p ByRSS) Len() int      { return len(p) }
@@ -287,22 +307,20 @@ func (p ByRSS) Less(i, j int) bool {
 	return p[i].RSS > p[j].RSS
 }
 
-// ByCPU sorts by the amount of CPU time used since the last update.
 type ByCPU []*Process
 
 func (p ByCPU) Len() int      { return len(p) }
 func (p ByCPU) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p ByCPU) Less(i, j int) bool {
 	p1, p2 := p[i], p[j]
-	p1Total := p1.UtimeDiff + p1.StimeDiff
-	p2Total := p2.UtimeDiff + p2.StimeDiff
-	if p1Total == p2Total {
+	p1Diff := p1.UtimeDiff + p1.StimeDiff
+	p2Diff := p2.UtimeDiff + p2.StimeDiff
+	if p1Diff == p2Diff {
 		return p1.Pid < p2.Pid
 	}
-	return p1Total > p2Total
+	return p1Diff > p2Diff
 }
 
-// ByTime sorts by the amount of CPU time used total.
 type ByTime []*Process
 
 func (p ByTime) Len() int      { return len(p) }
@@ -317,7 +335,18 @@ func (p ByTime) Less(i, j int) bool {
 	return p1Total > p2Total
 }
 
-// ByName sorts by Name.
+type ByState []*Process
+
+func (p ByState) Len() int      { return len(p) }
+func (p ByState) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p ByState) Less(i, j int) bool {
+	p1, p2 := p[i], p[j]
+	if p1.State == p2.State {
+		return p1.Pid < p2.Pid
+	}
+	return p1.State < p2.State
+}
+
 type ByName []*Process
 
 func (p ByName) Len() int      { return len(p) }

@@ -32,6 +32,7 @@ var (
 	MemPercentColumn = Column{"%MEM", 5, true}
 	CPUPercentColumn = Column{"%CPU", 5, true}
 	CPUTimeColumn    = Column{"TIME+", 9, true}
+	StateColumn      = Column{"S", 1, false}
 	CommandColumn    = Column{"COMMAND", -1, false}
 
 	Columns = []Column{
@@ -41,6 +42,7 @@ var (
 		MemPercentColumn,
 		CPUPercentColumn,
 		CPUTimeColumn,
+		StateColumn,
 		CommandColumn,
 	}
 )
@@ -147,6 +149,17 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	// FIXME: this won't be pretty when minutes gets big, maybe format hours?
 	time := fmt.Sprintf("%d:%02d:%02d", minutes, seconds, hundredths)
 	ui.writeColumn(time, CPUTimeColumn.Width, CPUTimeColumn.RightAlign)
+
+	// State
+	tmpFG := ui.fg
+	if i != ui.selected {
+		switch process.State {
+		case 'R':
+			ui.fg = termbox.ColorGreen
+		}
+	}
+	ui.writeColumn(string(process.State), StateColumn.Width, StateColumn.RightAlign)
+	ui.fg = tmpFG
 
 	// Command
 	command := process.Name
