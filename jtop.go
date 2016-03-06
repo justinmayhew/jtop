@@ -181,6 +181,8 @@ func main() {
 					ui.HandleDown()
 				case ev.Ch == 'k' || ev.Key == termbox.KeyArrowUp:
 					ui.HandleUp()
+				case ev.Ch == 't':
+					treeFlag = !treeFlag
 				case ev.Ch == 'v':
 					verboseFlag = !verboseFlag
 				case ev.Key == termbox.KeyCtrlD:
