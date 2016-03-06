@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/user"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -69,7 +68,7 @@ func validatePidsFlag() {
 
 	pids := strings.Split(pidsFlag, ",")
 	for _, value := range pids {
-		if pid, err := strconv.ParseUint(value, 10, 64); err != nil {
+		if pid, err := ParseUint64(value); err != nil {
 			message := fmt.Sprintf("flag error: %s is not a valid PID", value)
 			exit(message)
 		} else {

@@ -206,34 +206,19 @@ func (p *Process) parseStatFile() error {
 	// is paging.
 	p.State = values[statState][0]
 
-	p.Ppid, err = strconv.ParseUint(values[statPpid], 10, 64)
-	if err != nil {
-		panic(err)
-	}
+	p.Ppid = MustParseUint64(values[statPpid])
 
-	p.Pgrp, err = strconv.ParseUint(values[statPgrp], 10, 64)
-	if err != nil {
-		panic(err)
-	}
+	p.Pgrp = MustParseUint64(values[statPgrp])
 
 	lastUtime := p.Utime
-	p.Utime, err = strconv.ParseUint(values[statUtime], 10, 64)
-	if err != nil {
-		panic(err)
-	}
+	p.Utime = MustParseUint64(values[statUtime])
 	p.UtimeDiff = p.Utime - lastUtime
 
 	lastStime := p.Stime
-	p.Stime, err = strconv.ParseUint(values[statStime], 10, 64)
-	if err != nil {
-		panic(err)
-	}
+	p.Stime = MustParseUint64(values[statStime])
 	p.StimeDiff = p.Stime - lastStime
 
-	p.RSS, err = strconv.ParseUint(values[statRSS], 10, 64)
-	if err != nil {
-		panic(err)
-	}
+	p.RSS = MustParseUint64(values[statRSS])
 
 	if p.hasEmptyCmdlineFile() {
 		command := values[statCommand]

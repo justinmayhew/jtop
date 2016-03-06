@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -81,7 +80,7 @@ func (m *Monitor) Update() {
 			continue
 		}
 
-		pid, err := strconv.ParseUint(file.Name(), 10, 64)
+		pid, err := ParseUint64(file.Name())
 		if err != nil {
 			continue // non-Pid directory
 		}
@@ -127,7 +126,9 @@ func (m *Monitor) Update() {
 		sort.Sort(ByName(m.List))
 	}
 
-	m.associateProcesses()
+	if treeFlag {
+		m.associateProcesses()
+	}
 }
 
 func (m *Monitor) addProcess(p *Process) {
@@ -174,11 +175,7 @@ func (m *Monitor) parseStatFile() {
 			m.CPUTimeTotal = 0
 			cpuTimeValues := strings.Split(line, " ")[2:] // skip "cpu" and ""
 			for _, cpuTimeValue := range cpuTimeValues {
-				value, err := strconv.ParseUint(cpuTimeValue, 10, 64)
-				if err != nil {
-					panic(err)
-				}
-				m.CPUTimeTotal += value
+				m.CPUTimeTotal += MustParseUint64(cpuTimeValue)
 			}
 
 			// Only parsing the CPU jiffies for now, ignore rest of file.
@@ -227,8 +224,5 @@ func (m *Monitor) queryPageSize() {
 	}
 
 	pageSizeStr := strings.TrimSpace(string(out))
-	m.PageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
-	if err != nil {
-		panic(err)
-	}
+	m.PageSize = MustParseUint64(pageSizeStr)
 }
