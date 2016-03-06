@@ -152,7 +152,7 @@ func (p *Process) TreeList(level uint) []*Process {
 		p.TreePrefix = end
 	default:
 		p.TreePrefix = ""
-		for parent := p.Parent; parent != nil && parent.Pid != 1; parent = parent.Parent {
+		for parent := p.Parent; parent != nil && parent.Pid != InitPid; parent = parent.Parent {
 			if parent.isLastChild {
 				p.TreePrefix = lastChildSegment + p.TreePrefix
 			} else {
