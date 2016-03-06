@@ -29,6 +29,7 @@ Options:
   -k, --kernel   show kernel threads
   -p, --pids     filter by PID (comma-separated list)
   -s, --sort     sort by the specified column
+  -t, --tree     display process list as tree
   -u, --users    filter by User (comma-separated list)
       --verbose  show full command line with arguments
 `
@@ -38,6 +39,7 @@ var (
 	kernelFlag  bool
 	pidsFlag    string
 	sortFlag    string
+	treeFlag    bool
 	usersFlag   string
 	verboseFlag bool
 )
@@ -123,6 +125,9 @@ func init() {
 	defaultSort := CPUPercentColumn.Title
 	flag.StringVar(&sortFlag, "s", defaultSort, "")
 	flag.StringVar(&sortFlag, "sort", defaultSort, "")
+
+	flag.BoolVar(&treeFlag, "t", false, "")
+	flag.BoolVar(&treeFlag, "tree", false, "")
 
 	flag.StringVar(&usersFlag, "u", "", "")
 	flag.StringVar(&usersFlag, "users", "", "")

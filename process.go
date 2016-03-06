@@ -68,7 +68,14 @@ type Process struct {
 	// this process.
 	Alive bool
 
+	// Tree view
+	Parent      *Process
+	Children    []*Process
+	TreePrefix  string
+	isLastChild bool
+
 	// Data from /proc/<pid>/stat
+	Ppid  uint64
 	Pgrp  uint64
 	Utime uint64
 	Stime uint64
@@ -118,6 +125,47 @@ func (p *Process) IsKernelThread() bool {
 	return p.Pgrp == 0
 }
 
+func (p *Process) TreeList(level uint) []*Process {
+	const defaultEnd = "├─ "
+	const lastChildEnd = "└─ "
+	const defaultSegment = "│  "
+	const lastChildSegment = "   "
+
+	end := defaultEnd
+	if p.isLastChild {
+		end = lastChildEnd
+	}
+
+	switch level {
+	case 0:
+		p.TreePrefix = ""
+	case 1:
+		p.TreePrefix = end
+	default:
+		p.TreePrefix = ""
+		for parent := p.Parent; parent != nil && parent.Pid != 1; parent = parent.Parent {
+			if parent.isLastChild {
+				p.TreePrefix = lastChildSegment + p.TreePrefix
+			} else {
+				p.TreePrefix = defaultSegment + p.TreePrefix
+			}
+		}
+		p.TreePrefix = p.TreePrefix + end
+	}
+
+	var treeList []*Process
+	treeList = append(treeList, p)
+	for i, process := range p.Children {
+		if i == len(p.Children)-1 {
+			process.isLastChild = true
+		} else {
+			process.isLastChild = false
+		}
+		treeList = append(treeList, process.TreeList(level+1)...)
+	}
+	return treeList
+}
+
 func (p *Process) statProcDir() error {
 	path := path.Join("/proc", strconv.FormatUint(p.Pid, 10))
 
@@ -145,6 +193,11 @@ func (p *Process) parseStatFile() error {
 
 	line := string(data)
 	values := strings.Split(line, " ")
+
+	p.Ppid, err = strconv.ParseUint(values[statPpid], 10, 64)
+	if err != nil {
+		panic(err)
+	}
 
 	p.Pgrp, err = strconv.ParseUint(values[statPgrp], 10, 64)
 	if err != nil {

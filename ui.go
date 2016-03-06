@@ -14,6 +14,9 @@ const (
 	titleFG     = termbox.ColorBlack
 	titleBG     = termbox.ColorGreen
 	titleSortBG = termbox.ColorCyan
+
+	selectedFG = termbox.ColorBlack
+	selectedBG = termbox.ColorCyan
 )
 
 type Column struct {
@@ -94,7 +97,7 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	ui.x = 0
 	ui.fg, ui.bg = termbox.ColorDefault, termbox.ColorDefault
 	if i == ui.selected {
-		ui.fg, ui.bg = termbox.ColorBlack, termbox.ColorCyan
+		ui.fg, ui.bg = selectedFG, selectedBG
 	}
 
 	// Pid
@@ -150,7 +153,11 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	if verboseFlag {
 		command = process.Command
 	}
-	ui.writeLastColumn(command)
+	if treeFlag {
+		ui.writeCommandWithPrefix(command, process.TreePrefix)
+	} else {
+		ui.writeLastColumn(command)
+	}
 
 	ui.y++
 }
@@ -270,6 +277,15 @@ func (ui *UI) visibleProcesses() []*Process {
 		ui.selected = end - 1
 	}
 
+	if treeFlag {
+		init := ui.monitor.Map[InitPid]
+		treeList := init.TreeList(0)
+		if kernelFlag {
+			kthreadd := ui.monitor.Map[KthreaddPid]
+			treeList = append(treeList, kthreadd.TreeList(0)...)
+		}
+		return treeList[ui.start:end]
+	}
 	return ui.monitor.List[ui.start:end]
 }
 
@@ -302,6 +318,18 @@ func (ui *UI) writeLastColumn(s string) {
 	for ui.x < ui.width {
 		ui.setCell(' ')
 	}
+}
+
+func (ui *UI) writeCommandWithPrefix(command, prefix string) {
+	previous := ui.fg
+
+	ui.fg = termbox.ColorBlack
+	for _, ch := range prefix {
+		ui.setCell(ch)
+	}
+
+	ui.fg = previous
+	ui.writeLastColumn(command)
 }
 
 func (ui *UI) setCell(ch rune) {

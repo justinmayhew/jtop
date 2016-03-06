@@ -12,6 +12,11 @@ import (
 	"strings"
 )
 
+const (
+	InitPid     uint64 = 1
+	KthreaddPid uint64 = 2
+)
+
 var (
 	// PidWhitelist contains the Pids whitelisted via the --pids option.
 	PidWhitelist []uint64
@@ -67,6 +72,8 @@ func (m *Monitor) Update() {
 	// Mark all processes as Dead
 	for _, p := range m.List {
 		p.Alive = false
+		p.Parent = nil
+		p.Children = nil
 	}
 
 	for _, file := range files {
@@ -117,6 +124,8 @@ func (m *Monitor) Update() {
 	case CommandColumn.Title:
 		sort.Sort(ByName(m.List))
 	}
+
+	m.associateProcesses()
 }
 
 func (m *Monitor) addProcess(p *Process) {
@@ -131,6 +140,20 @@ func (m *Monitor) removeDeadProcesses() {
 		if !p.Alive {
 			m.List = append(m.List[:i], m.List[i+1:]...)
 			delete(m.Map, p.Pid)
+		}
+	}
+}
+
+func (m *Monitor) associateProcesses() {
+	for _, p := range m.List {
+		if parent, ok := m.Map[p.Ppid]; ok {
+			p.Parent = parent
+			parent.Children = append(parent.Children, p)
+		} else if p.Pid != InitPid && p.Pid != KthreaddPid {
+			// init (1) and kthreadd (2) are the only processes that should
+			// have no parent.
+			panic(fmt.Sprintf("process %d has parent %d that we're unaware of",
+				p.Pid, p.Ppid))
 		}
 	}
 }
