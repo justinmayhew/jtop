@@ -63,24 +63,25 @@ func (m *Monitor) Update() {
 	m.parseStatFile()
 	m.CPUTimeDiff = m.CPUTimeTotal - lastCPUTimeTotal
 
-	files, err := ioutil.ReadDir("/proc")
+	for _, p := range m.List {
+		p.Alive = false
+		if treeFlag {
+			p.Parent = nil
+			p.Children = nil
+		}
+	}
+
+	entires, err := ioutil.ReadDir("/proc")
 	if err != nil {
 		panic(err)
 	}
 
-	// Mark all processes as Dead
-	for _, p := range m.List {
-		p.Alive = false
-		p.Parent = nil
-		p.Children = nil
-	}
-
-	for _, file := range files {
-		if !file.IsDir() {
+	for _, entry := range entires {
+		if !entry.IsDir() {
 			continue
 		}
 
-		pid, err := ParseUint64(file.Name())
+		pid, err := ParseUint64(entry.Name())
 		if err != nil {
 			continue // non-Pid directory
 		}
@@ -93,14 +94,12 @@ func (m *Monitor) Update() {
 			if err := p.Update(); err == nil {
 				p.Alive = true
 			}
-		} else {
-			if p := NewProcess(pid); p != nil {
-				if p.IsKernelThread() && !kernelFlag {
-					continue
-				}
-				p.Alive = true
-				m.addProcess(p)
+		} else if p := NewProcess(pid); p != nil {
+			if p.IsKernelThread() && !kernelFlag {
+				continue
 			}
+			p.Alive = true
+			m.addProcess(p)
 		}
 	}
 
@@ -220,7 +219,5 @@ func (m *Monitor) queryPageSize() {
 	if err != nil {
 		panic(err)
 	}
-
-	pageSizeStr := strings.TrimSpace(string(out))
-	m.PageSize = MustParseUint64(pageSizeStr)
+	m.PageSize = MustParseUint64(strings.TrimSuffix(string(out), "\n"))
 }
