@@ -203,7 +203,7 @@ func main() {
 					termboxInit()
 				}
 			} else if ev.Type == termbox.EventResize {
-				ui.HandleResize()
+				ui.HandleResize(ev.Width, ev.Height)
 			}
 		}
 	}

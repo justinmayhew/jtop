@@ -71,7 +71,7 @@ func NewUI(monitor *Monitor) *UI {
 	ui := &UI{
 		monitor: monitor,
 	}
-	ui.updateTerminalSize()
+	ui.width, ui.height = termbox.Size()
 	return ui
 }
 
@@ -179,8 +179,8 @@ func (ui *UI) drawProcess(i int, process *Process) {
 	ui.y++
 }
 
-func (ui *UI) HandleResize() {
-	ui.updateTerminalSize()
+func (ui *UI) HandleResize(width, height int) {
+	ui.width, ui.height = width, height
 }
 
 func (ui *UI) HandleLeft() {
@@ -280,10 +280,6 @@ func (ui *UI) moreProcessesUp() bool {
 
 func (ui *UI) numProcessesOnScreen() int {
 	return ui.height - headerRows
-}
-
-func (ui *UI) updateTerminalSize() {
-	ui.width, ui.height = termbox.Size()
 }
 
 func (ui *UI) visibleProcesses() []*Process {
