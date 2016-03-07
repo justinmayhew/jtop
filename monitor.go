@@ -65,10 +65,6 @@ func (m *Monitor) Update() {
 
 	for _, p := range m.List {
 		p.Alive = false
-		if treeFlag {
-			p.Parent = nil
-			p.Children = nil
-		}
 	}
 
 	entires, err := ioutil.ReadDir("/proc")
@@ -145,6 +141,11 @@ func (m *Monitor) removeDeadProcesses() {
 
 // AssociateProcesses associates each Process with its Parent and Children.
 func (m *Monitor) AssociateProcesses() {
+	for _, p := range m.List {
+		p.Parent = nil
+		p.Children = nil
+	}
+
 	for _, p := range m.List {
 		if parent, ok := m.Map[p.Ppid]; ok {
 			p.Parent = parent
