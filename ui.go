@@ -89,7 +89,9 @@ func (ui *UI) drawHeader() {
 	ui.fg, ui.bg = titleFG, titleBG
 
 	for _, column := range Columns {
-		ui.bg = bgForTitle(column.Title)
+		if !treeFlag {
+			ui.bg = bgForTitle(column.Title)
+		}
 		ui.writeColumn(column.Title, column.Width, column.RightAlign)
 	}
 

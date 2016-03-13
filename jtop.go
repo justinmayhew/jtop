@@ -188,9 +188,7 @@ func main() {
 					ui.HandleResetOffset()
 				case ev.Ch == 't':
 					treeFlag = !treeFlag
-					if treeFlag {
-						monitor.AssociateProcesses()
-					}
+					monitor.Update()
 				case ev.Ch == 'v':
 					verboseFlag = !verboseFlag
 				case ev.Key == termbox.KeyCtrlD:
