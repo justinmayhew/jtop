@@ -111,6 +111,10 @@ func NewProcess(pid uint64) *Process {
 	return p
 }
 
+func (p *Process) String() string {
+	return fmt.Sprintf("%d (%s)", p.Pid, p.Name)
+}
+
 // Update updates Process from various files in /proc/<pid>. It returns an
 // error if Process was unable to be updated (probably because the actual OS
 // process is no longer running).

@@ -154,8 +154,8 @@ func (m *Monitor) associateProcesses() {
 		} else if p.Pid != InitPid && p.Pid != KthreaddPid {
 			// init (1) and kthreadd (2) are the only processes that should
 			// have no parent.
-			panic(fmt.Sprintf("process %d has parent %d that we're unaware of",
-				p.Pid, p.Ppid))
+			panic(fmt.Sprintf("process %v has parent %d that we're unaware of",
+				p, p.Ppid))
 		}
 	}
 }
