@@ -12,9 +12,7 @@ import (
 
 const (
 	// The values in /proc/<pid>/stat
-	statPid = iota
-	statCommand
-	statState
+	statState = iota
 	statPpid
 	statPgrp
 	statSession
@@ -205,7 +203,16 @@ func (p *Process) parseStatFile() error {
 	}
 
 	line := string(data)
-	values := strings.Split(line, " ")
+
+	commStart := strings.IndexByte(line, '(') + 1
+	commEnd := strings.LastIndexByte(line, ')')
+
+	if p.hasEmptyCmdlineFile() {
+		p.Command = line[commStart:commEnd]
+		p.Name = p.Command
+	}
+
+	values := strings.Split(line[commEnd+2:], " ")
 
 	// One character from the string "RSDZTW" where R
 	// is running, S is sleeping in an interruptible wait,
@@ -227,13 +234,6 @@ func (p *Process) parseStatFile() error {
 	p.StimeDiff = p.Stime - lastStime
 
 	p.RSS = MustParseUint64(values[statRSS])
-
-	if p.hasEmptyCmdlineFile() {
-		command := values[statCommand]
-		command = command[1 : len(command)-1] // strip '(' and ')'
-		p.Command = command
-		p.Name = command
-	}
 
 	// The state will only be running if it's running at the exact
 	// moment this file was read. That's probably not what the
