@@ -186,6 +186,10 @@ func main() {
 					ui.HandleRight()
 				case ev.Ch == '0' || ev.Ch == '^':
 					ui.HandleResetOffset()
+				case ev.Ch == 'g':
+					ui.HandleSelectFirst()
+				case ev.Ch == 'G':
+					ui.HandleSelectLast()
 				case ev.Ch == 't':
 					treeFlag = !treeFlag
 					monitor.Update()

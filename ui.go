@@ -221,6 +221,23 @@ func (ui *UI) HandleResetOffset() {
 	ui.offset = 0
 }
 
+func (ui *UI) HandleSelectFirst() {
+	ui.start = 0
+	ui.selected = 0
+}
+
+func (ui *UI) HandleSelectLast() {
+	nProcs := len(ui.monitor.List)
+	nProcsOnScreen := ui.numProcessesOnScreen()
+	if nProcs < nProcsOnScreen {
+		ui.start = 0
+		ui.selected = nProcs - 1
+	} else {
+		ui.start = nProcs - ui.numProcessesOnScreen()
+		ui.selected = nProcsOnScreen - 1
+	}
+}
+
 func (ui *UI) HandleCtrlD() {
 	halfPage := ui.numProcessesOnScreen() / 2
 	for i := 0; i < halfPage; i++ {
