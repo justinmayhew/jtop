@@ -24,7 +24,7 @@ const (
 const usage = `Usage: jtop [options]
 
 Options:
-  -d, --delay    delay between updates
+  -d, --delay    set delay between updates
   -k, --kernel   show kernel threads
   -p, --pids     filter by PID (comma-separated list)
   -s, --sort     sort by the specified column
@@ -43,9 +43,8 @@ var (
 	verboseFlag bool
 )
 
-func exit(message string) {
-	fmt.Fprintln(os.Stderr, message)
-	flag.Usage()
+func exitf(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, "jtop: "+format+"\n", a...)
 	os.Exit(1)
 }
 
@@ -57,7 +56,7 @@ func signalSelf(sig syscall.Signal) {
 
 func validateDelayFlag() {
 	if delayFlag <= 0 {
-		exit("flag error: delay must be positive")
+		exitf("delay (%s) must be positive", delayFlag)
 	}
 }
 
@@ -69,8 +68,7 @@ func validatePidsFlag() {
 	pids := strings.Split(pidsFlag, ",")
 	for _, value := range pids {
 		if pid, err := ParseUint64(value); err != nil {
-			message := fmt.Sprintf("flag error: %s is not a valid PID", value)
-			exit(message)
+			exitf("%s is not a valid PID", value)
 		} else {
 			PidWhitelist = append(PidWhitelist, pid)
 		}
@@ -83,8 +81,7 @@ func validateSortFlag() {
 			return
 		}
 	}
-	message := fmt.Sprintf("flag error: %s is not a valid sort column", sortFlag)
-	exit(message)
+	exitf("%s is not a valid sort column", sortFlag)
 }
 
 func validateUsersFlag() {
@@ -95,8 +92,7 @@ func validateUsersFlag() {
 	users := strings.Split(usersFlag, ",")
 	for _, username := range users {
 		if user, err := user.Lookup(username); err != nil {
-			message := fmt.Sprintf("flag error: user %s does not exist", username)
-			exit(message)
+			exitf("user %s does not exist", username)
 		} else {
 			UserWhitelist = append(UserWhitelist, user)
 		}
